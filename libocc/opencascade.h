@@ -33,6 +33,10 @@
 #include <Geom_Axis2Placement.hxx>
 #include <AIS_Trihedron.hxx>
 
+#include <draw_primitives.h>
+
+#define gp_Euler gp_Pnt // Used as universal toolset.
+
 
 
 struct POINT{
@@ -46,31 +50,44 @@ struct SEGMENT{
 extern SEGMENT Segment;
 extern std::vector<SEGMENT> SegmentVec;
 
-namespace occ{
+extern gp_Trsf level0x1x2x3x4x5x6;
 
+enum primitivetype {
+    point=0,
+    line=1,
+    lwpolyline=2, // Wire, linestrip
+    circle=3,
+    arc=4,
+    spline=5,
+    ellipse=6,
+};
+
+struct data {
+    Handle(AIS_Shape) ashape;
+    primitivetype type;
+    //! Startpoint, endpoint
+    gp_Pnt start, end;
+    std::vector<gp_Pnt> control;
+};
+extern std::vector<data> datavec;
+
+namespace occ {
 class Opencascade: public QGLWidget
 {
     Q_OBJECT
 public:
     explicit Opencascade(QWidget *parent = nullptr);
-    void Readstepfile(const std::string& theStepName);
+
+    bool Readstepfile(const std::string& theStepName);
     void Visit(const TDF_Label& theLabel);
+    void Init_robot();
+    void setup_tcp_origin();
 
-    void load_cube();
+    void show_shape(Handle(AIS_Shape) shape);
     void Redraw();
-    void clear();
-    void fit_all();
+    void update_jointpos(double j0, double j1, double j2, double j3, double j4, double j5);
 
-    void draw_point(gp_Pnt point);
-    void draw_line(gp_Pnt point1, gp_Pnt point2);
-    void draw_3p_arc(gp_Pnt point1, gp_Pnt point2, gp_Pnt point3);
-    void draw_circle(gp_Pnt center,double radius);
-    void draw_cp_arc(gp_Pnt center, gp_Pnt point1, gp_Pnt point2);
-    void draw_acad_arc(gp_Pnt center, double radius, const Standard_Real alpha1, const Standard_Real alpha2);
-
-    void draw_ellipse(gp_Pnt center, gp_Pnt secpoint, double alpha_start, double alpha_end, double ratio);
-    void write_text(std::string str, int textheight, double x, double y, double rot_deg);
-
+    // View
     void set_orthographic();
     void set_perspective();
     void set_view_front();
@@ -79,6 +96,16 @@ public:
     void set_view_right();
     void set_view_top();
     void set_view_bottom();
+
+    // Zoom
+    void zoom_all();
+
+    // Selection
+    void get_selections();
+    void delete_selections();
+
+    // Erase
+    void erase_all();
 
 private:
     void m_initialize_context();
@@ -114,6 +141,21 @@ private:
     Standard_Integer m_x_max;
     Standard_Integer m_y_max;
     CurrentAction3d m_current_mode;
+    //gp_Trsf current_tcp;
+
+    Handle(AIS_Shape) aisBody_tcp_xaxis, aisBody_tcp_yaxis, aisBody_tcp_zaxis;
+
+    // Create the euler lines
+    double toollenght=105;
+    double linelenght=25;
+    double coneheight=25;
+    double conetopdiameter=1;
+    double conebottomdiameter=5;
+    double textheight=25;
+
+
+    TopoDS_Edge edge_linepreview;
+    Handle(AIS_Shape) aisBody_linepreview;
 
 signals:
 

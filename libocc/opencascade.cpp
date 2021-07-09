@@ -1,5 +1,6 @@
 #include "opencascade.h"
 
+
 #include <OSD.hxx>
 #include <AIS_Trihedron.hxx>
 #include <AIS_ViewCube.hxx>
@@ -37,8 +38,12 @@
 #include <Geom_TrimmedCurve.hxx>
 #include <Geom_CartesianPoint.hxx>
 #include <GC_MakeArcOfCircle.hxx>
+#include <GC_MakeArcOfEllipse.hxx>
+#include <GC_MakeCircle.hxx>
+#include <GC_MakeEllipse.hxx>
 #include <GC_MakeSegment.hxx>
 #include <gce_MakeRotation.hxx>
+#include <TopExp.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS.hxx>
 #include <TopExp_Explorer.hxx>
@@ -87,6 +92,10 @@
 #include <Font_BRepTextBuilder.hxx>
 #include <Bnd_Box.hxx>
 
+#include "gp_Elips.hxx"
+#include <NCollection_Mat4.hxx>
+#include <gp_Quaternion.hxx>
+
 //! Make conversion's easy:
 #define toRadians M_PI/180.0
 #define toDegrees (180.0/M_PI)
@@ -94,9 +103,8 @@
 using namespace occ;
 
 //strore the data from the stepfile.
-std::vector<TopoDS_Shape> Shape;
-std::vector<Handle(AIS_Shape)> ais_Shape;
-std::vector<Quantity_Color> colv;
+
+std::vector<data> datavec;
 
 SEGMENT Segment;
 std::vector<SEGMENT> SegmentVec;
@@ -104,13 +112,18 @@ std::vector<SEGMENT> SegmentVec;
 Handle(XCAFDoc_ColorTool) aColorTool;
 Handle(XCAFDoc_ShapeTool) aShapeTool;
 
+gp_Trsf level0x1x2x3x4x5x6;
+
+TopoDS_Shape shape_toolx,shape_tooly,shape_toolz;
+Handle(AIS_Shape) toolx,tooly,toolz;
+
 Opencascade::Opencascade(QWidget *parent) : QGLWidget(parent)
 {
     setBackgroundRole( QPalette::NoRole );
     setMouseTracking( true );
 }
 
-void Opencascade::Readstepfile(const std::string& theStepName)
+bool Opencascade::Readstepfile(const std::string& theStepName)
 {
     SegmentVec.push_back(Segment);
 
@@ -137,6 +150,8 @@ void Opencascade::Readstepfile(const std::string& theStepName)
     Visit(aRootLabel);
 
     m_view->FitAll();
+
+    return 1;
 }
 
 void Opencascade::Visit(const TDF_Label& theLabel)
@@ -188,6 +203,292 @@ void Opencascade::Visit(const TDF_Label& theLabel)
     }
 }
 
+void Opencascade::setup_tcp_origin(){
+    double toollenght=105;
+    TopoDS_Edge edge = BRepBuilderAPI_MakeEdge({525+toollenght,0,890},{525+toollenght+100,0,890});
+    aisBody_tcp_xaxis = new AIS_Shape(edge);
+    //aisBody_tcp_xaxis->SetLocalTransformation(level0x1x2x3x4x5x6);
+    m_context->SetColor(aisBody_tcp_xaxis,Quantity_NOC_RED,Standard_False);
+    m_context->SetMaterial(aisBody_tcp_xaxis,Graphic3d_NOM_PLASTIC,Standard_False);
+    m_context->Display(aisBody_tcp_xaxis,Standard_False);
+
+    edge= BRepBuilderAPI_MakeEdge({525+toollenght,0,890},{525+toollenght,0+100,890});
+    aisBody_tcp_yaxis = new AIS_Shape(edge);
+    //aisBody_tcp_yaxis->SetLocalTransformation(level0x1x2x3x4x5x6);
+    m_context->SetColor(aisBody_tcp_yaxis,Quantity_NOC_GREEN,Standard_False);
+    m_context->SetMaterial(aisBody_tcp_yaxis,Graphic3d_NOM_PLASTIC,Standard_False);
+    m_context->Display(aisBody_tcp_yaxis,Standard_False);
+
+    edge= BRepBuilderAPI_MakeEdge({525+toollenght,0,890},{525+toollenght,0,890+100});
+    aisBody_tcp_zaxis = new AIS_Shape(edge);
+    //aisBody_tcp_zaxis->SetLocalTransformation(level0x1x2x3x4x5x6);
+    m_context->SetColor(aisBody_tcp_zaxis,Quantity_NOC_BLUE,Standard_False);
+    m_context->SetMaterial(aisBody_tcp_zaxis,Graphic3d_NOM_PLASTIC,Standard_False);
+    m_context->Display(aisBody_tcp_zaxis,Standard_False);
+}
+
+void Opencascade::update_jointpos(double j0, double j1, double j2, double j3, double j4, double j5){
+
+    // Robot joints.
+    SegmentVec.at(1).MyTrsf.SetRotation(gp_Ax1(gp_Pnt(
+                                                   0,           // Framevector  x
+                                                   0,           //              y
+                                                   0), gp_Dir(  //              z
+                                                                0,           // Rotationflag x
+                                                                0,           //              y
+                                                                1)), j0);
+    SegmentVec.at(2).MyTrsf.SetRotation(gp_Ax1(gp_Pnt(
+                                                   25,
+                                                   0,
+                                                   400), gp_Dir(
+                                                   0,
+                                                   1,
+                                                   0)), j1);
+
+    SegmentVec.at(3).MyTrsf.SetRotation(gp_Ax1(gp_Pnt(
+                                                   25,
+                                                   0,
+                                                   855), gp_Dir(
+                                                   0,
+                                                   1,
+                                                   0)), j2);
+
+    SegmentVec.at(4).MyTrsf.SetRotation(gp_Ax1(gp_Pnt(
+                                                   25,
+                                                   0,
+                                                   890), gp_Dir(
+                                                   1,
+                                                   0,
+                                                   0)), j3);
+
+    SegmentVec.at(5).MyTrsf.SetRotation(gp_Ax1(gp_Pnt(
+                                                   445,
+                                                   0,
+                                                   890), gp_Dir(
+                                                   0,
+                                                   1,
+                                                   0)), j4);
+
+    // Robot mount flange axis 6.
+    SegmentVec.at(6).MyTrsf.SetRotation(gp_Ax1(gp_Pnt(
+                                                   525,
+                                                   0,
+                                                   890), gp_Dir(
+                                                   1,
+                                                   0,
+                                                   0)), j5);
+
+    gp_Trsf level0=SegmentVec.at(0).MyTrsf;
+    gp_Trsf level1=SegmentVec.at(1).MyTrsf;
+    gp_Trsf level2=SegmentVec.at(2).MyTrsf;
+    gp_Trsf level3=SegmentVec.at(3).MyTrsf;
+    gp_Trsf level4=SegmentVec.at(4).MyTrsf;
+    gp_Trsf level5=SegmentVec.at(5).MyTrsf;
+    gp_Trsf level6=SegmentVec.at(6).MyTrsf;
+
+    //      level0=level0;
+    /*
+    gp_Trsf level0x1=level0*level1;
+    gp_Trsf level0x1x2 = level0x1*level2;
+    gp_Trsf level0x1x2x3 = level0x1x2*level3;
+    gp_Trsf level0x1x2x3x4 = level0x1x2x3*level4;
+    gp_Trsf level0x1x2x3x4x5 = level0x1x2x3x4*level5;
+    level0x1x2x3x4x5x6 = level0x1x2x3x4x5*level6;
+    */
+
+    gp_Trsf level0x1;
+    level0x1.Multiply(level0);
+    level0x1.Multiply(level1);
+
+    gp_Trsf level0x1x2 = level0x1;//*level2;
+    level0x1x2.Multiply(level2);
+
+    gp_Trsf level0x1x2x3 = level0x1x2; //*level3;
+    level0x1x2x3.Multiply(level3);
+
+    gp_Trsf level0x1x2x3x4 = level0x1x2x3; //*level4;
+    level0x1x2x3x4.Multiply(level4);
+
+    gp_Trsf level0x1x2x3x4x5 = level0x1x2x3x4; //*level5;
+    level0x1x2x3x4x5.Multiply(level5);
+
+    level0x1x2x3x4x5x6 = level0x1x2x3x4x5; //level6; // extern var to calculate move in tool direction.
+    level0x1x2x3x4x5x6.Multiply(level6);
+
+    // Apply multipied transformation, works if each stepfile represents one joint.
+    for(unsigned int i=0; i<SegmentVec.at(0).Ais_ShapeVec.size(); i++){
+        SegmentVec.at(0).Ais_ShapeVec.at(i)->SetLocalTransformation(level0);
+    }
+
+    for(unsigned int i=0; i<SegmentVec.at(1).Ais_ShapeVec.size(); i++){
+        SegmentVec.at(1).Ais_ShapeVec.at(i)->SetLocalTransformation(level0x1);
+    }
+
+    for(unsigned int i=0; i<SegmentVec.at(2).Ais_ShapeVec.size(); i++){
+        SegmentVec.at(2).Ais_ShapeVec.at(i)->SetLocalTransformation(level0x1x2);
+    }
+
+    for(unsigned int i=0; i<SegmentVec.at(3).Ais_ShapeVec.size(); i++){
+        SegmentVec.at(3).Ais_ShapeVec.at(i)->SetLocalTransformation(level0x1x2x3);
+    }
+
+    for(unsigned int i=0; i<SegmentVec.at(4).Ais_ShapeVec.size(); i++){
+        SegmentVec.at(4).Ais_ShapeVec.at(i)->SetLocalTransformation(level0x1x2x3x4);
+    }
+
+    for(unsigned int i=0; i<SegmentVec.at(5).Ais_ShapeVec.size(); i++){
+        SegmentVec.at(5).Ais_ShapeVec.at(i)->SetLocalTransformation(level0x1x2x3x4x5);
+    }
+
+    for(unsigned int i=0; i<SegmentVec.at(6).Ais_ShapeVec.size(); i++){
+        SegmentVec.at(6).Ais_ShapeVec.at(i)->SetLocalTransformation(level0x1x2x3x4x5x6);
+    }
+
+    // Move x-axis tcp origin along with the machine.
+    aisBody_tcp_xaxis->SetLocalTransformation(level0x1x2x3x4x5x6);
+    aisBody_tcp_yaxis->SetLocalTransformation(level0x1x2x3x4x5x6);
+    aisBody_tcp_zaxis->SetLocalTransformation(level0x1x2x3x4x5x6);
+
+    // Print matrix 3 rows, 4 colums
+    /*
+    for(unsigned int i=1; i<4; i++){
+         for(unsigned int j=1; j<5; j++){
+            std::cout<<level0x1x2x3x4x5x6.Value(i,j)<<" * ";
+        }
+        std::cout<<std::endl;
+    }
+    std::cout<<std::endl;
+    */
+
+    // Look for mouse selections.
+    get_selections();
+
+    if(!m_context.IsNull()){
+        m_context->CurrentViewer()->Redraw();
+    }
+}
+
+void Opencascade::show_shape(Handle(AIS_Shape) shape){
+    m_context->Display(shape,Standard_False);
+}
+
+void Opencascade::get_selections(){ // Updated by jointpos function from mainwindow.
+
+    for(m_context->InitSelected(); m_context->MoreSelected(); m_context->NextSelected()){
+
+        const TopoDS_Shape& aSelShape = m_context->SelectedShape();
+        std::cout<<"selected shape type:"<<aSelShape.ShapeType()<<std::endl;
+        // Shapetype 6=line.
+
+        for(unsigned int i=0; i<datavec.size(); i++){
+            if(m_context->SelectedShape()==datavec.at(i).ashape->Shape()){
+                std::cout<<"match found at datavec i:"<<i<<std::endl;
+
+                // Print some extra content:
+                std::cout<<"primitivetype:"<<datavec.at(i).type<<std::endl;
+            }
+        }
+
+        TopExp_Explorer explorer;
+
+        for(explorer.Init(aSelShape, TopAbs_EDGE); explorer.More(); explorer.Next()){
+
+            const TopoDS_Edge& edge = TopoDS::Edge(explorer.Current());
+
+            TopoDS_Vertex v1,v2;
+            TopExp::Vertices(edge,v1,v2);
+            gp_Pnt p1= BRep_Tool::Pnt(v1);
+            gp_Pnt p2= BRep_Tool::Pnt(v2);
+
+            //std::cout<<"edge p1 x: "<<p1.X()<<" y:"<<p1.Y()<<" z:"<<p1.Z()<<std::endl;
+            //std::cout<<"edge p2 x: "<<p2.X()<<" y:"<<p2.Y()<<" z:"<<p2.Z()<<std::endl;
+
+            // An attempt to get data from child items. Not working.
+            //
+            //            TopoDS_Iterator it(aSelShape);
+            //            for(; it.More(); it.Next()){
+            //                const TopoDS_Shape child=it.Value();
+            //                std::cout<<"child shapetype:"<<child.ShapeType()<<std::endl;
+
+            //                TopExp_Explorer expl;
+
+            //                for(expl.Init(child, TopAbs_ShapeEnum(7)); expl.More(); expl.Next()){
+
+            //                    /* Enum shape types.
+            //                    TopAbs_COMPOUND,
+            //                    TopAbs_COMPSOLID,
+            //                    TopAbs_SOLID,
+            //                    TopAbs_SHELL,
+            //                    TopAbs_FACE,
+            //                    TopAbs_WIRE,
+            //                    TopAbs_EDGE,
+            //                    TopAbs_VERTEX, ==> 7
+            //                    TopAbs_SHAPE
+            //                    */
+
+            //                    std::cout<<"inside shape enum 7"<<std::endl;
+            //                    const TopoDS_Vertex& vertex = TopoDS::Vertex(expl.Current());
+            //                    gp_Pnt p= BRep_Tool::Pnt(vertex);
+            //                    std::cout<<"    child vertex p x: "<<p.X()<<" y:"<<p.Y()<<" z:"<<p.Z()<<std::endl;
+
+            //                }
+            //            }
+
+            //std::cout<<"NEXT-SHAPE"<<std::endl;
+        }
+
+        // A example how to get points from a vertex.
+        //
+        //        for(explorer.Init(aSelShape, TopAbs_VERTEX); explorer.More(); explorer.Next()){
+        //            const TopoDS_Vertex& vertex = TopoDS::Vertex(explorer.Current());
+        //            gp_Pnt p1= BRep_Tool::Pnt(vertex);
+        //            std::cout<<"vertex p x: "<<p1.X()<<" y:"<<p1.Y()<<" z:"<<p1.Z()<<std::endl;
+        //        }
+    }
+}
+
+void Opencascade::delete_selections(){
+
+    std::cout<<"datavecsize before:"<<datavec.size()<<std::endl;
+    int nr_to_remove=0;
+    for(m_context->InitSelected(); m_context->MoreSelected(); m_context->NextSelected()){
+
+        // Find the match of selected item in the Ais_databucket.
+        // In this case one item can be removed each time.
+        for(unsigned int i=0; i<datavec.size(); i++){
+
+            if(m_context->SelectedShape()==datavec.at(i).ashape->Shape()){
+                //std::cout<<"match found, remove this item from Ais_bucket"<<std::endl;
+                nr_to_remove=i;
+            }
+        }
+        datavec.erase(datavec.begin()+nr_to_remove);
+    }
+
+    // Quick way to erase items.
+    m_context->EraseSelected(false);
+
+    // For check print content.
+
+    for(unsigned int i=0; i<datavec.size(); i++){
+
+        TopExp_Explorer explorer;
+        for(explorer.Init(datavec.at(i).ashape->Shape(), TopAbs_EDGE); explorer.More(); explorer.Next()){
+
+            const TopoDS_Edge& edge = TopoDS::Edge(explorer.Current());
+
+            TopoDS_Vertex v1,v2;
+            TopExp::Vertices(edge,v1,v2);
+            gp_Pnt p1= BRep_Tool::Pnt(v1);
+            gp_Pnt p2= BRep_Tool::Pnt(v2);
+
+            std::cout<<"content left edge p1 x: "<<p1.X()<<" y:"<<p1.Y()<<" z:"<<p1.Z()<<std::endl;
+            std::cout<<"content left edge p2 x: "<<p2.X()<<" y:"<<p2.Y()<<" z:"<<p2.Z()<<std::endl;
+        }
+    }
+    std::cout<<"datavecsize after:"<<datavec.size()<<std::endl;
+}
+
 void Opencascade::Redraw(){
     //m_context->CurrentViewer()->Redraw();
     m_view->Redraw();
@@ -195,7 +496,9 @@ void Opencascade::Redraw(){
 
 void Opencascade::m_initialize_context()
 {
-    if (m_context.IsNull()){
+    if (m_context.IsNull())
+    {
+
         Handle(Aspect_DisplayConnection) m_display_donnection = new Aspect_DisplayConnection();
 
         if (m_graphic_driver.IsNull())
@@ -226,6 +529,44 @@ void Opencascade::m_initialize_context()
         m_viewer->SetDefaultLights();
         m_viewer->SetLightOn();
 
+        /// This is the interactivve 3d box
+        //  View : top, bottom, side, 3d, etc.
+
+        opencascade::handle<AIS_ViewCube> aisViewCube = new AIS_ViewCube;
+        aisViewCube->SetBoxColor(Quantity_NOC_GRAY75);
+        //aisViewCube->SetFixedAnimationLoop(false);
+        aisViewCube->SetDrawAxes(false);
+        aisViewCube->SetSize(55);
+        aisViewCube->SetFontHeight(12);
+        aisViewCube->SetTransformPersistence(
+                    new Graphic3d_TransformPers(
+                        Graphic3d_TMF_TriedronPers,
+                        Aspect_TOTP_LEFT_UPPER,
+                        Graphic3d_Vec2i(85, 85)));
+        m_context->Display(aisViewCube, false);
+        //aisViewCube->Attributes()->DatumAspect()->LineAspect(Prs3d_DP_XAxis)->SetColor(Quantity_NOC_RED2);
+        //const Handle_Prs3d_DatumAspect& datumAspect = aisViewCube->Attributes()->DatumAspect();
+        //datumAspect->ShadingAspect(Prs3d_DP_XAxis)->SetColor(Quantity_NOC_RED2);
+        //datumAspect->ShadingAspect(Prs3d_DP_YAxis)->SetColor(Quantity_NOC_GREEN2);
+        //datumAspect->ShadingAspect(Prs3d_DP_ZAxis)->SetColor(Quantity_NOC_BLUE2);
+        //m_aisViewCube = aisViewCube;
+
+        /// Set background homogenius, one color.
+        //  m_view->SetBackgroundColor(Quantity_NOC_GRAY49);
+        //  m_viewer->SetDefaultShadingModel(Graphic3d_TypeOfShadingModel::V3d_COLOR);
+
+        /// Set background with gradient stylesheet
+        //  Gradient sheme's for SetBgGradientColors:
+        //  Aspect_GFM_CORNER1
+        //  Aspect_GFM_CORNER2
+        //  Aspect_GFM_CORNER3
+        //  Aspect_GFM_CORNER4
+        //  Aspect_GFM_DIAG1
+        //  Aspect_GFM_DIAG2
+        //  Aspect_GFM_HOR
+        //  Aspect_GFM_NONE
+        //  Aspect_GFM_VER
+
         Quantity_Color cola,colb;
         cola.SetValues(0.3,0.3,0.3,Quantity_TOC_RGB);
         colb.SetValues(0.6,0.6,0.6,Quantity_TOC_RGB);
@@ -255,22 +596,6 @@ void Opencascade::m_initialize_context()
         /// Show triedron. This is the 3d axis cross at the lower left of the screen.
         m_view->TriedronDisplay(Aspect_TOTP_LEFT_LOWER, Quantity_NOC_GOLD, 0.08, V3d_ZBUFFER);
 
-        /// Set background homogenius, one color.
-        //  m_view->SetBackgroundColor(Quantity_NOC_GRAY49);
-        //  m_viewer->SetDefaultShadingModel(Graphic3d_TypeOfShadingModel::V3d_COLOR);
-
-        /// Set background with gradient stylesheet
-        //  Gradient sheme's for SetBgGradientColors:
-        //  Aspect_GFM_CORNER1
-        //  Aspect_GFM_CORNER2
-        //  Aspect_GFM_CORNER3
-        //  Aspect_GFM_CORNER4
-        //  Aspect_GFM_DIAG1
-        //  Aspect_GFM_DIAG2
-        //  Aspect_GFM_HOR
-        //  Aspect_GFM_NONE
-        //  Aspect_GFM_VER
-
         /*
         /// Show triedron at a specific place on the screen
         axis = new Geom_Axis2Placement(gp::XOY());
@@ -296,8 +621,6 @@ void Opencascade::m_initialize_context()
         */
 
         m_view->MustBeResized();
-        m_view->SetProj( V3d_Zpos );
-        load_cube();
     }
 }
 
@@ -385,46 +708,6 @@ void Opencascade::wheelEvent(QWheelEvent *event)
     m_view->ZoomAtPoint(0, 0, event->angleDelta().y(), 0);
 }
 
-// Empty screen
-void Opencascade::clear()
-{
-    m_context->EraseAll(0);
-    m_view->FitAll();
-    m_view->Redraw();
-
-    // Load the cube again :
-    load_cube();
-}
-
-void Opencascade::load_cube(){
-    // This is the interactivve 3d box
-    opencascade::handle<AIS_ViewCube> aisViewCube = new AIS_ViewCube;
-    aisViewCube->SetBoxColor(Quantity_NOC_GRAY75);
-    //aisViewCube->SetFixedAnimationLoop(false);
-    aisViewCube->SetDrawAxes(false);
-    aisViewCube->SetSize(55);
-    aisViewCube->SetFontHeight(12);
-    aisViewCube->SetTransformPersistence(
-                new Graphic3d_TransformPers(
-                    Graphic3d_TMF_TriedronPers,
-                    Aspect_TOTP_LEFT_UPPER,
-                    Graphic3d_Vec2i(85, 85)));
-    m_context->Display(aisViewCube, false);
-
-
-    //aisViewCube->Attributes()->DatumAspect()->LineAspect(Prs3d_DP_XAxis)->SetColor(Quantity_NOC_RED2);
-    //const Handle_Prs3d_DatumAspect& datumAspect = aisViewCube->Attributes()->DatumAspect();
-    //datumAspect->ShadingAspect(Prs3d_DP_XAxis)->SetColor(Quantity_NOC_RED2);
-    //datumAspect->ShadingAspect(Prs3d_DP_YAxis)->SetColor(Quantity_NOC_GREEN2);
-    //datumAspect->ShadingAspect(Prs3d_DP_ZAxis)->SetColor(Quantity_NOC_BLUE2);
-    //m_aisViewCube = aisViewCube;
-}
-
-void Opencascade::fit_all(){
-     m_view->FitAll();
-}
-
-// View options
 void Opencascade::set_orthographic(){
     m_view->Camera()->SetProjectionType (Graphic3d_Camera::Projection_Orthographic);
     m_view->Update();
@@ -465,211 +748,15 @@ void Opencascade::set_view_right()
     m_view->SetProj( V3d_Xpos );
 }
 
-
-// Draw primitives:
-
-void Opencascade::draw_point(gp_Pnt point){
-    //make a point
-    //gp_Pnt point1(0,0,0);
-
-    //make a vertex from the point
-    TopoDS_Vertex vertex1 = BRepBuilderAPI_MakeVertex(point);
-
-    //display the vertex
-    Handle(AIS_Shape) aisBody1 = new AIS_Shape(vertex1);
-    //aisBody1->SetLocalTransformation(ChainVec.back().WorkFrameVec.back().MyTrsf);
-    m_context->SetColor(aisBody1,Quantity_NOC_LAVENDER,Standard_False);
-    m_context->SetMaterial(aisBody1,Graphic3d_NOM_PLASTIC,Standard_False);
-    m_context->Display(aisBody1,Standard_False);
-}
-
-void Opencascade::draw_line(gp_Pnt point1, gp_Pnt point2){
-
-    //make a point
-    //gp_Pnt point1(0,0,0);
-
-    //make a vertex from the point
-    TopoDS_Vertex vertex1 = BRepBuilderAPI_MakeVertex(point1);
-
-    //make one more point
-    //gp_Pnt point2(100,0,0);
-
-    //make an edge from the two points
-    TopoDS_Edge edge1 = BRepBuilderAPI_MakeEdge(point1,point2);
-
-    //display the vertex (point cross)
-    //Handle(AIS_Shape) aisBody1 = new AIS_Shape(vertex1);
-    //aisBody1->SetLocalTransformation(ChainVec.back().WorkFrameVec.back().MyTrsf);
-    //m_context->SetColor(aisBody1,Quantity_NOC_LAVENDER,Standard_False);
-    //m_context->SetMaterial(aisBody1,Graphic3d_NOM_PLASTIC,Standard_False);
-    //m_context->Display(aisBody1,Standard_False);
-
-    //display the edge
-    Handle(AIS_Shape) aisBody2 = new AIS_Shape(edge1);
-
-    //Transformation matrix:
-    //aisBody2->SetLocalTransformation(ChainVec.back().WorkFrameVec.back().MyTrsf);
-    m_context->SetColor(aisBody2,Quantity_NOC_BLUE4,Standard_False);
-    m_context->SetMaterial(aisBody2,Graphic3d_NOM_PLASTIC,Standard_False);
-    m_context->Display(aisBody2,Standard_False);
-}
-
-void Opencascade::draw_circle(gp_Pnt center,double radius){
-
-    //draw circle :
-    gp_Dir dir(0,0,1); // you can change this
-    gp_Circ circle(gp_Ax2( center, dir),radius);
-    BRepBuilderAPI_MakeEdge makeEdge(circle);
-    Handle(AIS_Shape) shape = new AIS_Shape(TopoDS_Edge());
-    m_context->SetColor(shape,Quantity_NOC_BLUE4,Standard_False);
-    m_context->SetMaterial(shape,Graphic3d_NOM_PLASTIC,Standard_False);
-    shape ->Set(makeEdge.Edge());
-
-    //Transformation matrix:
-    //shape->SetLocalTransformation(ChainVec.back().WorkFrameVec.back().MyTrsf);
-    m_context->Display(shape , 1);
-}
-
-#include "gp_Elips.hxx"
-#include <GC_MakeArcOfEllipse.hxx>
-void Opencascade::draw_ellipse(gp_Pnt center, gp_Pnt secpoint, double alpha_start, double alpha_end, double ratio){
-
-    //https://github.com/grotius-cnc/QT_CadCam_rev0/blob/master/display/display.h
-    // Acad's ellipse nr's, https://github.com/grotius-cnc/cadcam/blob/master/dxf/read_ellipse_AC1027.cpp
-    // x,y,z centerpoint    10,20,30
-    // x,y,z endpoint mayor 11,21,31 ( coordinates relative to ellipse centerpoint..)
-    // ratio                40
-    // start angle          41
-    // end angle            42
-
-    //Standard_Real alpha1=alpha_start;
-    //Standard_Real alpha2=alpha_end;
-
-    //center point to endpoint mayor axis..
-    double MayorRadius = sqrt(pow(secpoint.X()-center.X(),2) + pow(secpoint.Y()-center.Y(),2) + pow(secpoint.Z()-center.Z(),2));
-    //ratio minor axis to mayor axis..
-    double MinorRadius = ratio*MayorRadius ;
-
-    gp_Dir xDirection(secpoint.X()-center.X(),secpoint.Y()-center.Y(),secpoint.Z()-center.Z()); // Direction is auto normalized by occ.
-    gp_Dir normalDirection(0,0,1);
-    gp_Ax2 axis(center,normalDirection,xDirection);
-
-    gp_Elips ellipse(axis,MayorRadius,MinorRadius);
-
-    Handle(Geom_TrimmedCurve) aArcOfEllipse = GC_MakeArcOfEllipse(ellipse,alpha_start,alpha_end,0);
-
-    TopoDS_Edge aEdge = BRepBuilderAPI_MakeEdge(aArcOfEllipse);
-
-    //display the edge
-    Handle(AIS_Shape) aisBody = new AIS_Shape(aEdge);
-
-    //Transformation matrix:
-    //aisBody2->SetLocalTransformation(ChainVec.back().WorkFrameVec.back().MyTrsf);
-
-    m_context->SetColor(aisBody,Quantity_NOC_BLUE4,Standard_False);
-    m_context->SetMaterial(aisBody,Graphic3d_NOM_PLASTIC,Standard_False);
-    m_context->Display(aisBody,Standard_False);
-}
-
-void Opencascade::draw_3p_arc(gp_Pnt point1,gp_Pnt point2,gp_Pnt point3){
-
-    //gp_Pnt point1(0,0,0);
-    //gp_Pnt point2(50,50,0);
-    //gp_Pnt point3(100,0,0);
-    Handle(Geom_TrimmedCurve) aArcOfCircle = GC_MakeArcOfCircle(point1,point2,point3);
-
-    TopoDS_Edge aEdge2 = BRepBuilderAPI_MakeEdge(aArcOfCircle);
-
-    //display the edge
-    Handle(AIS_Shape) aisBody2 = new AIS_Shape(aEdge2);
-
-    //Transformation matrix:
-    //aisBody2->SetLocalTransformation(ChainVec.back().WorkFrameVec.back().MyTrsf);
-
-    m_context->SetColor(aisBody2,Quantity_NOC_BLUE4,Standard_False);
-    m_context->SetMaterial(aisBody2,Graphic3d_NOM_PLASTIC,Standard_False);
-    m_context->Display(aisBody2,Standard_False);
-}
-
-void Opencascade::draw_cp_arc(gp_Pnt center, gp_Pnt point1, gp_Pnt point2){
-
-    double radius=center.Distance(point2);
-    //std::cout<<"radius:"<<radius<<std::endl;
-    gp_Dir dir(0,0,1); // you can change this
-    gp_Circ circle(gp_Ax2( center, dir),radius);
-
-    Handle(Geom_TrimmedCurve) aArcOfCircle = GC_MakeArcOfCircle(circle,point1,point2,0);
-
-    TopoDS_Edge aEdge2 = BRepBuilderAPI_MakeEdge(aArcOfCircle);
-
-    //display the edge
-    Handle(AIS_Shape) aisBody2 = new AIS_Shape(aEdge2);
-
-    //Transformation matrix:
-    //aisBody2->SetLocalTransformation(ChainVec.back().WorkFrameVec.back().MyTrsf);
-
-    m_context->SetColor(aisBody2,Quantity_NOC_BLUE4,Standard_False);
-    m_context->SetMaterial(aisBody2,Graphic3d_NOM_PLASTIC,Standard_False);
-    m_context->Display(aisBody2,Standard_False);
-}
-
-void Opencascade::draw_acad_arc(gp_Pnt center, double radius, const Standard_Real alpha1, const Standard_Real alpha2){
-
-    //std::cout<<"radius:"<<radius<<std::endl;
-    gp_Dir dir(0,0,1); // you can change this
-    gp_Circ circle(gp_Ax2( center, dir),radius);
-
-    Handle(Geom_TrimmedCurve) aArcOfCircle = GC_MakeArcOfCircle(circle,alpha1,alpha2,0);
-
-    TopoDS_Edge aEdge2 = BRepBuilderAPI_MakeEdge(aArcOfCircle);
-
-    //display the edge
-    Handle(AIS_Shape) aisBody2 = new AIS_Shape(aEdge2);
-
-    //Transformation matrix:
-    //aisBody2->SetLocalTransformation(ChainVec.back().WorkFrameVec.back().MyTrsf);
-
-    m_context->SetColor(aisBody2,Quantity_NOC_BLUE4,Standard_False);
-    m_context->SetMaterial(aisBody2,Graphic3d_NOM_PLASTIC,Standard_False);
-    m_context->Display(aisBody2,Standard_False);
-}
-
-void Opencascade::write_text(std::string str, int textheight, double x, double y, double rot_deg){ //https://www.youtube.com/watch?v=31SXQLpdNyE
-
+void Opencascade::erase_all()
+{
     m_context->EraseAll(0);
-
-    const char *chartext=str.c_str();
-
-    if(textheight==0 || textheight<0){textheight=1;}
-
-    Font_BRepFont aBrepFont("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", textheight);
-    Font_BRepTextBuilder aTextBuilder;
-    TopoDS_Shape Text_Shape = aTextBuilder.Perform(aBrepFont, NCollection_String(chartext));
-
-    Handle(AIS_Shape) Text_ais_Shape = new AIS_Shape(Text_Shape);
-
-    gp_Trsf MyTrsf_rot;
-    MyTrsf_rot.SetRotation(gp_Ax1(gp_Pnt(
-                                      0,
-                                      0,
-                                      0), gp_Dir(
-                                      0,                         //rotation flag x
-                                      0,                         //rotation flag y
-                                      1)), rot_deg * M_PI /180);
-    gp_Trsf MyTrsf_trans;
-    MyTrsf_trans.SetTranslation(gp_Pnt(0,0,0),gp_Pnt(x,y,0));
-    Text_ais_Shape->SetLocalTransformation(MyTrsf_trans*MyTrsf_rot);
-
-    m_context->SetColor(Text_ais_Shape,Quantity_NOC_BLACK,Standard_False);
-    //m_context->SetMaterial(aisBody2,Graphic3d_NOM_PLASTIC,Standard_False);
-    m_context->Display(Text_ais_Shape,Standard_True);
-
-    //set_view_top();
-    //m_view->ZFitAll();
-    //m_view->FitAll();
-    //m_view->Redraw();
 }
 
+void Opencascade::zoom_all()
+{
+    m_view->FitAll();
+}
 
 
 
