@@ -9,7 +9,6 @@ CONFIG += c++20
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    databucket.cpp \
     libdxfrw/drw_classes.cpp \
     libdxfrw/drw_entities.cpp \
     libdxfrw/drw_header.cpp \
@@ -30,6 +29,7 @@ SOURCES += \
     libdxfrw/intern/rscodec.cpp \
     libdxfrw/libdwgr.cpp \
     libdxfrw/libdxfrw.cpp \
+    libocc/draw_primitives.cpp \
     libspline/bezier_spline.cpp \
     libspline/cubic_spline.cpp \
     libspline/spline.cpp \
@@ -38,7 +38,6 @@ SOURCES += \
     libocc/opencascade.cpp
 
 HEADERS += \
-    databucket.h \
     libcavalier/polylineoffset.hpp \
     libcavalier/polylineoffsetislands.hpp \
     libdxfrw/drw_base.h \
@@ -70,6 +69,7 @@ HEADERS += \
     libdxfrw/libdwgr.h \
     libdxfrw/libdxfrw.h \
     libdxfrw/main_doc.h \
+    libocc/draw_primitives.h \
     libspline/bezier_spline.h \
     libspline/cubic_spline.h \
     libspline/spline.h \

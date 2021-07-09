@@ -56,6 +56,7 @@ bool MainWindow::save_dxf_file(std::string filename){
     return ok;
 }
 
+//! Example how to write a primitive to the dxf file.
 bool MainWindow::write_entity(){
 
     std::cout<<"add line item"<<std::endl;
@@ -155,6 +156,7 @@ void MainWindow::load_opencascade_primitives()
             datavec.push_back(d);
         }
 
+        // The spline has no direction just as the line.
         if(DRW::SPLINE == (*iter)->eType){ std::cout<<"spline"<<std::endl;
 
             DRW_Spline *spline = dynamic_cast<DRW_Spline*>(*iter);

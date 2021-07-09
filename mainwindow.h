@@ -15,6 +15,7 @@
 using namespace Eigen;
 
 #include "opencascade.h"
+#include "draw_primitives.h"
 using namespace occ;
 
 #include <QMainWindow>
@@ -36,8 +37,6 @@ public:
     bool open_dxf_file(std::string filename);
     bool save_dxf_file(std::string filename);
     bool write_entity();
-    void fill_databucket();
-
 
     void Update_Opencascade();
     void load_opencascade_primitives();
