@@ -301,7 +301,7 @@
        <item row="0" column="2">
         <widget class="QLineEdit" name="lineEdit_dxf_filename">
          <property name="text">
-          <string>./dxf/test.dxf</string>
+          <string>./dxf/contourtypes.dxf</string>
          </property>
         </widget>
        </item>
@@ -328,7 +328,7 @@
           <string>View top</string>
          </property>
          <property name="icon">
-          <iconset resource="icons.qrc">
+          <iconset>
            <normaloff>:/icons/top.svg</normaloff>:/icons/top.svg</iconset>
          </property>
         </widget>
@@ -1067,7 +1067,7 @@
        <string>...</string>
       </property>
       <property name="icon">
-       <iconset resource="icons.qrc">
+       <iconset>
         <normaloff>:/icons/walle.jpeg</normaloff>:/icons/walle.jpeg</iconset>
       </property>
       <property name="iconSize">

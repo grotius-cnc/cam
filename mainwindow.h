@@ -9,14 +9,14 @@
 #include <dx_data.h>
 #include <dx_iface.h>
 
-#include <databucket.h>
-
 #include <cubic_spline.h>
 using namespace Eigen;
 
 #include "opencascade.h"
 #include "draw_primitives.h"
 using namespace occ;
+
+#include "contours.h"
 
 #include <QMainWindow>
 #include <QTimer>

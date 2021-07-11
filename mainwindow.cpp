@@ -56,6 +56,7 @@ bool MainWindow::save_dxf_file(std::string filename){
     return ok;
 }
 
+//! Example how to write a primitive to the dxf file.
 bool MainWindow::write_entity(){
 
     std::cout<<"add line item"<<std::endl;
@@ -68,8 +69,8 @@ bool MainWindow::write_entity(){
     return 1;
 }
 
-void MainWindow::load_opencascade_primitives()
-{
+void MainWindow::load_opencascade_primitives(){
+
     OpencascadeWidget->erase_all();
 
     // Print the dxf output.
@@ -83,7 +84,7 @@ void MainWindow::load_opencascade_primitives()
 
             struct data d;
             d.ashape=ashape;
-            d.type=primitivetype::point;
+            d.primitivetype=primitive_type::point;
             d.start={point->basePoint.x,point->basePoint.y,point->basePoint.z};
             d.end={point->basePoint.x,point->basePoint.y,point->basePoint.z};
             datavec.push_back(d);
@@ -97,7 +98,7 @@ void MainWindow::load_opencascade_primitives()
 
             struct data d;
             d.ashape=ashape;
-            d.type=primitivetype::line;
+            d.primitivetype=primitive_type::line;
             d.start={line->basePoint.x, line->basePoint.y, line->basePoint.z};
             // Line middle-point, half-way point.
             d.control.push_back({line->basePoint.x+line->secPoint.x/2, line->basePoint.y+line->secPoint.y/2,line->basePoint.z+line->secPoint.z/2});
@@ -145,7 +146,7 @@ void MainWindow::load_opencascade_primitives()
 
             struct data d;
             d.ashape=ashape;
-            d.type=primitivetype::lwpolyline;
+            d.primitivetype=primitive_type::lwpolyline;
 
             d.start={pntvec.front().X(),pntvec.front().Y(),0};                      // std::cout<<"lwpolyline points x: "<<d.start.X()<<" y:"<<d.start.Y()<<" no z"<<std::endl;
             for(unsigned int i=1; i<pntvec.size()-1; i++){
@@ -155,6 +156,7 @@ void MainWindow::load_opencascade_primitives()
             datavec.push_back(d);
         }
 
+        // The spline has no direction just as the line.
         if(DRW::SPLINE == (*iter)->eType){ std::cout<<"spline"<<std::endl;
 
             DRW_Spline *spline = dynamic_cast<DRW_Spline*>(*iter);
@@ -170,7 +172,7 @@ void MainWindow::load_opencascade_primitives()
 
             struct data d;
             d.ashape=ashape;
-            d.type=primitivetype::spline;
+            d.primitivetype=primitive_type::spline;
             d.start={spline->controllist.front()->x,spline->controllist.front()->y,spline->controllist.front()->z};
             for(unsigned int i=1; i<spline->controllist.size()-1; i++){
                 d.control.push_back({spline->controllist.at(i)->x,spline->controllist.at(i)->y,spline->controllist.at(i)->z});
@@ -189,7 +191,7 @@ void MainWindow::load_opencascade_primitives()
 
             struct data d;
             d.ashape=ashape;
-            d.type=primitivetype::arc;
+            d.primitivetype=primitive_type::arc;
 
             // Request a few arc circumfence points.
             int division=8;
@@ -199,11 +201,13 @@ void MainWindow::load_opencascade_primitives()
             d.start=d.control.front();  // std::cout<<"arc starpoint x:"<<d.start.X()<<" y:"<<d.start.Y()<<" z:"<<d.start.Z()<<std::endl;
             d.end=d.control.back();     // std::cout<<"arc endpoint x:"<<d.end.X()<<" y:"<<d.end.Y()<<" z:"<<d.end.Z()<<std::endl;
 
+            std::cout<<"arc startpoint x: "<<d.start.X()<<" y:"<<d.start.Y()<<" z:"<<d.start.Z()<<std::endl;
+            std::cout<<"arc endpoint x: "<<d.end.X()<<" y:"<<d.end.Y()<<" z:"<<d.end.Z()<<std::endl;
             d.control.pop_back();
             d.control.erase(d.control.begin());
 
             for(unsigned int i=0; i<d.control.size(); i++){
-                std::cout<<"arc controlpoints x:"<<d.control.at(i).X()<<" y:"<<d.control.at(i).Y()<<" z:"<<d.control.at(i).Z()<<std::endl;
+                //std::cout<<"arc controlpoints x:"<<d.control.at(i).X()<<" y:"<<d.control.at(i).Y()<<" z:"<<d.control.at(i).Z()<<std::endl;
             }
 
             datavec.push_back(d);
@@ -218,10 +222,9 @@ void MainWindow::load_opencascade_primitives()
 
             struct data d;
             d.ashape=ashape;
-            d.type=primitivetype::circle;
-            // For contour recognize we need a few circle circumfence points to perform the pip (point in polygon) algoritme.
-            // Right side of circle
+            d.primitivetype=primitive_type::circle;
 
+            // For contour recognize we need a few circle circumfence points to perform the pip (point in polygon) algoritme.
             // Clockwise output, division (segmentation value) :
             int division=8;
             d.control=draw_primitives().get_cirlce_circumfence_points({circle->basePoint.x,circle->basePoint.y,circle->basePoint.z},circle->radious,division);
@@ -253,7 +256,7 @@ void MainWindow::load_opencascade_primitives()
 
             struct data d;
             d.ashape=ashape;
-            d.type=primitivetype::ellipse;
+            d.primitivetype=primitive_type::ellipse;
 
             // Clockwise output, division (segmentation value) :
             int division=8;
@@ -286,6 +289,10 @@ void MainWindow::load_opencascade_primitives()
     }
 
     OpencascadeWidget->zoom_all(); // Zoom to extends. Top view is already set when initializing the opencascadewidget at startup.
+
+    // At this stage we can create contours from the individual primitives.
+    // We do this in the contours class.
+    contours().main(2);
 }
 
 void MainWindow::on_toolButton_view_top_pressed()

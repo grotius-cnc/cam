@@ -9,6 +9,7 @@ CONFIG += c++20
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    libcontour/contours.cpp \
     libdxfrw/drw_classes.cpp \
     libdxfrw/drw_entities.cpp \
     libdxfrw/drw_header.cpp \
@@ -40,6 +41,7 @@ SOURCES += \
 HEADERS += \
     libcavalier/polylineoffset.hpp \
     libcavalier/polylineoffsetislands.hpp \
+    libcontour/contours.h \
     libdxfrw/drw_base.h \
     libdxfrw/drw_classes.h \
     libdxfrw/drw_entities.h \
@@ -84,6 +86,7 @@ INCLUDEPATH+=   libdxfrw/ \
                 libocc/ \
                 libspline/ \
                 libcavalier/ \
+                libcontour/ \
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
