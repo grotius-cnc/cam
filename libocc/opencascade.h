@@ -52,7 +52,7 @@ extern std::vector<SEGMENT> SegmentVec;
 
 extern gp_Trsf level0x1x2x3x4x5x6;
 
-enum primitivetype {
+enum primitive_type {
     point=0,
     line=1,
     lwpolyline=2, // Wire, linestrip
@@ -62,14 +62,29 @@ enum primitivetype {
     ellipse=6,
 };
 
+enum contour_type {
+    none=0,
+    single_open=1,
+    single_closed=2,
+    multi_open=3,
+    multi_closed=4,
+};
+
 struct data {
     Handle(AIS_Shape) ashape;
-    primitivetype type;
+    primitive_type primitivetype;
+    contour_type contourtype=contour_type::none;
     //! Startpoint, endpoint
-    gp_Pnt start, end;
+    gp_Pnt start{0,0,0}, end{0,0,0};
     std::vector<gp_Pnt> control;
+    bool select=0;
 };
 extern std::vector<data> datavec;
+
+struct contour {
+    std::vector<data> primitive_sequence;
+};
+extern std::vector<contour> contourvec;
 
 namespace occ {
 class Opencascade: public QGLWidget

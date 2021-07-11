@@ -105,6 +105,7 @@ using namespace occ;
 //strore the data from the stepfile.
 
 std::vector<data> datavec;
+std::vector<contour> contourvec;
 
 SEGMENT Segment;
 std::vector<SEGMENT> SegmentVec;
@@ -385,7 +386,7 @@ void Opencascade::get_selections(){ // Updated by jointpos function from mainwin
                 std::cout<<"match found at datavec i:"<<i<<std::endl;
 
                 // Print some extra content:
-                std::cout<<"primitivetype:"<<datavec.at(i).type<<std::endl;
+                std::cout<<"primitivetype:"<<datavec.at(i).primitivetype<<std::endl;
             }
         }
 
