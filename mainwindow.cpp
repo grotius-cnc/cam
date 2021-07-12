@@ -101,7 +101,8 @@ void MainWindow::load_opencascade_primitives(){
             d.primitivetype=primitive_type::line;
             d.start={line->basePoint.x, line->basePoint.y, line->basePoint.z};
             // Line middle-point, half-way point.
-            d.control.push_back({line->basePoint.x+line->secPoint.x/2, line->basePoint.y+line->secPoint.y/2,line->basePoint.z+line->secPoint.z/2});
+            d.control.push_back({(line->basePoint.x+line->secPoint.x)/2, (line->basePoint.y+line->secPoint.y)/2,(line->basePoint.z+line->secPoint.z)/2});
+            // std::cout<<"controlpoint line x:"<<d.control.back().X()<<" y:"<<d.control.back().Y()<<" z:"<<d.control.back().Z()<<std::endl;
             d.end={line->secPoint.x, line->secPoint.y, line->secPoint.z};
             datavec.push_back(d);
         }
@@ -192,17 +193,26 @@ void MainWindow::load_opencascade_primitives(){
             struct data d;
             d.ashape=ashape;
             d.primitivetype=primitive_type::arc;
+            d.radius=arc->radious;
+            d.center={arc->center().x,arc->center().y,arc->center().z};
+
+            // Request a arc midpoint for the cavalier bulge function when we need 2 arc's to form a circle.
+            int division=3;
+            d.arcmid=draw_primitives().get_arc_circumfence_points({arc->center().x,arc->center().y,arc->center().z}, arc->radius(),
+                                                                   arc->startAngle(),arc->endAngle(),division);
+            // std::cout<<"arcmid.size, must be 1 controlpoint: "<<d.arcmid.size()<<std::endl;
+            // std::cout<<"arcmid controlpoint x: "<<d.arcmid.at(1).X()<<" y:"<<d.arcmid.at(1).Y()<<" z:"<<d.arcmid.at(1).Z()<<std::endl;
 
             // Request a few arc circumfence points.
-            int division=8;
+            division=8;
             d.control=draw_primitives().get_arc_circumfence_points({arc->center().x,arc->center().y,arc->center().z}, arc->radius(),
                                                                    arc->startAngle(),arc->endAngle(),division);
 
             d.start=d.control.front();  // std::cout<<"arc starpoint x:"<<d.start.X()<<" y:"<<d.start.Y()<<" z:"<<d.start.Z()<<std::endl;
             d.end=d.control.back();     // std::cout<<"arc endpoint x:"<<d.end.X()<<" y:"<<d.end.Y()<<" z:"<<d.end.Z()<<std::endl;
 
-            std::cout<<"arc startpoint x: "<<d.start.X()<<" y:"<<d.start.Y()<<" z:"<<d.start.Z()<<std::endl;
-            std::cout<<"arc endpoint x: "<<d.end.X()<<" y:"<<d.end.Y()<<" z:"<<d.end.Z()<<std::endl;
+            // std::cout<<"arc startpoint x: "<<d.start.X()<<" y:"<<d.start.Y()<<" z:"<<d.start.Z()<<std::endl;
+            // std::cout<<"arc endpoint x: "<<d.end.X()<<" y:"<<d.end.Y()<<" z:"<<d.end.Z()<<std::endl;
             d.control.pop_back();
             d.control.erase(d.control.begin());
 
@@ -223,6 +233,8 @@ void MainWindow::load_opencascade_primitives(){
             struct data d;
             d.ashape=ashape;
             d.primitivetype=primitive_type::circle;
+            d.radius=circle->radious;
+            d.center={circle->basePoint.x,circle->basePoint.y,circle->basePoint.z};
 
             // For contour recognize we need a few circle circumfence points to perform the pip (point in polygon) algoritme.
             // Clockwise output, division (segmentation value) :
@@ -251,8 +263,8 @@ void MainWindow::load_opencascade_primitives(){
                                                                        ellipse->ratio);
             ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(ellipse->color),1);
 
-            std::cout<<"ellipse secpoint x:"<<ellipse->secPoint.x<<" y:"<<ellipse->secPoint.y<<" z:"<<ellipse->secPoint.z<<std::endl;
-            std::cout<<"ellipse extpoint x:"<<ellipse->extPoint.x<<" y:"<<ellipse->extPoint.y<<" z:"<<ellipse->extPoint.z<<std::endl;
+            // std::cout<<"ellipse secpoint x:"<<ellipse->secPoint.x<<" y:"<<ellipse->secPoint.y<<" z:"<<ellipse->secPoint.z<<std::endl;
+            // std::cout<<"ellipse extpoint x:"<<ellipse->extPoint.x<<" y:"<<ellipse->extPoint.y<<" z:"<<ellipse->extPoint.z<<std::endl;
 
             struct data d;
             d.ashape=ashape;
@@ -283,16 +295,22 @@ void MainWindow::load_opencascade_primitives(){
         }
     }
 
+    // At this stage we can create contours from the individual primitives.
+    // We do this in the contours class.
+    contours().main(2);
+
+    offsets().do_offset(5);
+
     // Show shapes from datavec
     for(unsigned int i=0; i<datavec.size(); i++){
         OpencascadeWidget->show_shape(datavec.at(i).ashape);
     }
 
-    OpencascadeWidget->zoom_all(); // Zoom to extends. Top view is already set when initializing the opencascadewidget at startup.
+    for(unsigned int i=0; i<camvec.size(); i++){
+        OpencascadeWidget->show_shape(camvec.at(i).ashape);
+    }
 
-    // At this stage we can create contours from the individual primitives.
-    // We do this in the contours class.
-    contours().main(2);
+    OpencascadeWidget->zoom_all(); // Zoom to extends. Top view is already set when initializing the opencascadewidget at startup.
 }
 
 void MainWindow::on_toolButton_view_top_pressed()

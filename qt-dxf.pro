@@ -9,7 +9,9 @@ CONFIG += c++20
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    libcavalier/offsets.cpp \
     libcontour/contours.cpp \
+    libdata/variable.cpp \
     libdxfrw/drw_classes.cpp \
     libdxfrw/drw_entities.cpp \
     libdxfrw/drw_header.cpp \
@@ -37,11 +39,10 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     libocc/opencascade.cpp
-
 HEADERS += \
-    libcavalier/polylineoffset.hpp \
-    libcavalier/polylineoffsetislands.hpp \
+    libcavalier/offsets.h \
     libcontour/contours.h \
+    libdata/variable.h \
     libdxfrw/drw_base.h \
     libdxfrw/drw_classes.h \
     libdxfrw/drw_entities.h \
@@ -86,7 +87,9 @@ INCLUDEPATH+=   libdxfrw/ \
                 libocc/ \
                 libspline/ \
                 libcavalier/ \
+                libcavalier/include/cavc/ \
                 libcontour/ \
+                libdata/ \
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -94,7 +97,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
-    libdxfrw/main.txt
 
 # this copies the configuration files etc to the build direcory. So user has only to edit the source directory.
 copydata.commands = $(COPY_DIR) $$PWD/* $$OUT_PWD

@@ -6,6 +6,8 @@
 #include <sys/stat.h>
 #include <vector>
 
+#include <variable.h>
+
 #include <dx_data.h>
 #include <dx_iface.h>
 
@@ -17,6 +19,7 @@ using namespace Eigen;
 using namespace occ;
 
 #include "contours.h"
+#include "offsets.h"
 
 #include <QMainWindow>
 #include <QTimer>

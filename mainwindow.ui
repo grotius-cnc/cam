@@ -327,10 +327,6 @@
          <property name="text">
           <string>View top</string>
          </property>
-         <property name="icon">
-          <iconset>
-           <normaloff>:/icons/top.svg</normaloff>:/icons/top.svg</iconset>
-         </property>
         </widget>
        </item>
        <item row="0" column="0">
