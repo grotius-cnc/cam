@@ -2,8 +2,7 @@
 
 /* The datavec from opencascade.h is used here.
  *
- * 1. Check open contour types if they are indeed open. "contourtype::open"
- *
+ * Author : Skynet 2021
  *
  * */
 
@@ -18,7 +17,92 @@ void contours::main(double tol){
     check_for_single_closed_contours(tol);
     check_for_multi_contours(tol);
     check_for_single_open_contours(tol);
+
+    area(); // Convert all contours to clockwise [cw].
+
     print_result();
+}
+
+void contours::area(){
+
+    // Calculate if contour is [cw] or [ccw].
+    double area=0;
+    double xs=0,ys=0,xe=0,ye=0;
+
+    // Basic formula for area, add each contour point with : area+=(it1->X()-it->X())*(it1->Y()+it->Y());
+    // Then area/2=result in mm2.
+
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        area=0;
+        std::cout<<"contournumber: "<<i<<std::endl;
+        if(contourvec.at(i).primitive_sequence.at(0).contourtype==contour_type::multi_closed || contourvec.at(i).primitive_sequence.at(0).contourtype==contour_type::single_closed){
+
+            for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){
+
+                xs=contourvec.at(i).primitive_sequence.at(j).start.X();
+                ys=contourvec.at(i).primitive_sequence.at(j).start.Y();
+                double xc_front=contourvec.at(i).primitive_sequence.at(j).control.front().X();
+                double yc_front=contourvec.at(i).primitive_sequence.at(j).control.front().Y();
+                area+=(xc_front-xs)*(yc_front+ys);
+
+                if(contourvec.at(i).primitive_sequence.at(j).control.size()>1){
+                    for(unsigned int k=0; k<contourvec.at(i).primitive_sequence.at(j).control.size()-1; k++){
+                        double xca=contourvec.at(i).primitive_sequence.at(j).control.at(k).X();
+                        double yca=contourvec.at(i).primitive_sequence.at(j).control.at(k).Y();
+                        double xcb=contourvec.at(i).primitive_sequence.at(j).control.at(k+1).X();
+                        double ycb=contourvec.at(i).primitive_sequence.at(j).control.at(k+1).Y();
+                        area+=(xcb-xca)*(ycb+yca);
+                    }
+                }
+
+                double xc_back=contourvec.at(i).primitive_sequence.at(j).control.back().X();
+                double yc_back=contourvec.at(i).primitive_sequence.at(j).control.back().Y();
+                xe=contourvec.at(i).primitive_sequence.at(j).end.X();
+                ye=contourvec.at(i).primitive_sequence.at(j).end.Y();
+                area+=(xe-xc_back)*(ye+yc_back);
+            }
+        }
+        area=area/2; // Area/2=result in mm2.
+
+        if(area<0){ // If a ccw, invert to cw.
+            swap_contour(i);
+            area*=-1;
+        }
+
+        contourvec.at(i).area=area;
+
+        std::cout<<"area mm2: "<<area<<std::endl;
+
+    } std::cout<<""<<std::endl;
+}
+
+void contours::swap_contour(unsigned int i /*contourvec.at(i)*/){
+
+    // Invert each individual primitive that is member of the contour.
+    for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){
+
+        // Invert startpoint with endpoint of the primitive.
+        double xs=contourvec.at(i).primitive_sequence.at(j).start.X();
+        double ys=contourvec.at(i).primitive_sequence.at(j).start.Y();
+        double zs=contourvec.at(i).primitive_sequence.at(j).start.Z();
+        double xe=contourvec.at(i).primitive_sequence.at(j).end.X();
+        double ye=contourvec.at(i).primitive_sequence.at(j).end.Y();
+        double ze=contourvec.at(i).primitive_sequence.at(j).end.Z();
+
+        contourvec.at(i).primitive_sequence.at(j).start.SetX(xe);
+        contourvec.at(i).primitive_sequence.at(j).start.SetY(ye);
+        contourvec.at(i).primitive_sequence.at(j).start.SetZ(ze);
+        contourvec.at(i).primitive_sequence.at(j).end.SetX(xs);
+        contourvec.at(i).primitive_sequence.at(j).end.SetY(ys);
+        contourvec.at(i).primitive_sequence.at(j).end.SetZ(zs);
+
+        // Invert the controlpoints of the primitive.
+        std::reverse(contourvec.at(i).primitive_sequence.at(j).control.begin(), contourvec.at(i).primitive_sequence.at(j).control.end());
+
+    }
+
+    // Invert the contour primitive sequence.
+    std::reverse(contourvec.at(i).primitive_sequence.begin(), contourvec.at(i).primitive_sequence.end());
 }
 
 void contours::init_primitives(){
@@ -59,8 +143,8 @@ void contours::check_for_multi_contours(double tol){
                 endmatch+=find_end_start_match(i,j,tol);
                 endmatch+=find_end_end_match(i,j,tol);
 
-                 std::cout<<"startmatch value:"<<startmatch<<std::endl;
-                 std::cout<<"endmatch value:"<<endmatch<<std::endl;
+                std::cout<<"startmatch value:"<<startmatch<<std::endl;
+                std::cout<<"endmatch value:"<<endmatch<<std::endl;
 
                 contour c;
 
@@ -74,8 +158,6 @@ void contours::check_for_multi_contours(double tol){
                 }
 
                 if(startmatch==0 && endmatch==1){ // Match ok.
-
-
 
                     datavec.at(i).contourtype=contour_type::multi_open;
                     datavec.at(i).select=true;
@@ -266,8 +348,6 @@ int contours::find_end_end_match(unsigned int i /*source*/, unsigned int j /*tar
     return 0;
 }
 
-
-
 void contours::print_result(){
 
     std::cout<<"primitive types: point=0, line=1, lwpolyline=2, circle=3, arc=4, spline=5, ellipse=6 "<<std::endl;
@@ -275,6 +355,7 @@ void contours::print_result(){
 
     for(unsigned int i=0; i<contourvec.size(); i++){
         std::cout<<"contournumber: "<<i<<std::endl;
+        std::cout<<"contourarea  : "<<contourvec.at(i).area<<std::endl;
         for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){
 
             std::cout<<"    contoursequence         : " << j <<std::endl;

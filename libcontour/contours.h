@@ -1,6 +1,7 @@
 #ifndef CONTOURS_H
 #define CONTOURS_H
 
+#include <variable.h>
 #include "opencascade.h"
 #include "draw_primitives.h"
 using namespace occ;
@@ -20,7 +21,9 @@ public:
     void check_for_single_open_contours(double tol);
 
     //! Helper functions
+    void area();
     void swap(unsigned int i);
+    void swap_contour(unsigned int i /*contourvec.at(i)*/);
     int find_next(unsigned int i /*source*/, unsigned int &target /*target*/, double tol);
 
     int find_start_start_match(unsigned int i /*source*/, unsigned int j /*target*/, double tol);

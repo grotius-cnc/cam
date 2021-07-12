@@ -104,8 +104,8 @@ using namespace occ;
 
 //strore the data from the stepfile.
 
-std::vector<data> datavec;
-std::vector<contour> contourvec;
+//std::vector<data> datavec, camvec;
+//std::vector<contour> contourvec;
 
 SEGMENT Segment;
 std::vector<SEGMENT> SegmentVec;
