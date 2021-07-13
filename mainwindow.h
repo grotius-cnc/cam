@@ -57,6 +57,8 @@ private slots:
 
     void on_toolButton_stacket_page_plus_pressed();
 
+    void on_spinBox_valueChanged(int arg1);
+
 private:
     Ui::MainWindow *ui;
     

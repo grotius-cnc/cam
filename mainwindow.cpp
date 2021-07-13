@@ -26,11 +26,14 @@ MainWindow::~MainWindow()
 void MainWindow::Update_Opencascade()
 {
     OpencascadeWidget->Redraw();
-    OpencascadeWidget->get_selections();
+    //OpencascadeWidget->get_selections();
 }
 
 bool MainWindow::open_dxf_file(std::string filename){
 
+    OpencascadeWidget->erase_all();
+    contourvec.clear();
+    datavec.clear();
     dx_iface().clear(&fData);           // Clear previous loaded dxf data.
 
     bool ok = iface->fileImport( filename, &fData );
@@ -71,12 +74,10 @@ bool MainWindow::write_entity(){
 
 void MainWindow::load_opencascade_primitives(){
 
-    OpencascadeWidget->erase_all();
-
     // Print the dxf output.
     auto blocks = fData.mBlock->ent;
     for (auto iter = blocks.begin(); iter != blocks.end(); iter++){
-        if(DRW::POINT == (*iter)->eType){ std::cout<<"point"<<std::endl;
+        if(DRW::POINT == (*iter)->eType){ // std::cout<<"point"<<std::endl;
 
             DRW_Point *point = dynamic_cast<DRW_Point*>(*iter);
             Handle(AIS_Shape) ashape=draw_primitives().draw_3d_point({point->basePoint.x,point->basePoint.y,point->basePoint.z});
@@ -108,7 +109,7 @@ void MainWindow::load_opencascade_primitives(){
         }
 
         // Lwpolyline is saved as clockwise [cw]
-        if(DRW::LWPOLYLINE == (*iter)->eType){ std::cout<<"lwpolyline"<<std::endl;
+        if(DRW::LWPOLYLINE == (*iter)->eType){ // std::cout<<"lwpolyline"<<std::endl;
 
             DRW_LWPolyline *lwpolyline = dynamic_cast<DRW_LWPolyline*>(*iter);
             std::vector<gp_Pnt> pntvec;
@@ -158,7 +159,7 @@ void MainWindow::load_opencascade_primitives(){
         }
 
         // The spline has no direction just as the line.
-        if(DRW::SPLINE == (*iter)->eType){ std::cout<<"spline"<<std::endl;
+        if(DRW::SPLINE == (*iter)->eType){ // std::cout<<"spline"<<std::endl;
 
             DRW_Spline *spline = dynamic_cast<DRW_Spline*>(*iter);
             std::vector<gp_Pnt> pntvec; // input
@@ -183,7 +184,7 @@ void MainWindow::load_opencascade_primitives(){
         }
 
         // Arc's are saved as clockwise [cw] by draw_primivite->get points funtion !
-        if(DRW::ARC == (*iter)->eType){ std::cout<<"arc"<<std::endl;
+        if(DRW::ARC == (*iter)->eType){ // std::cout<<"arc"<<std::endl;
 
             DRW_Arc *arc = dynamic_cast<DRW_Arc*>(*iter);
             Handle(AIS_Shape) ashape=draw_primitives().draw_2d_acad_arc({arc->center().x,arc->center().y,arc->center().z}, arc->radius(),
@@ -199,7 +200,7 @@ void MainWindow::load_opencascade_primitives(){
             // Request a arc midpoint for the cavalier bulge function when we need 2 arc's to form a circle.
             int division=3;
             d.arcmid=draw_primitives().get_arc_circumfence_points({arc->center().x,arc->center().y,arc->center().z}, arc->radius(),
-                                                                   arc->startAngle(),arc->endAngle(),division);
+                                                                  arc->startAngle(),arc->endAngle(),division);
             // std::cout<<"arcmid.size, must be 1 controlpoint: "<<d.arcmid.size()<<std::endl;
             // std::cout<<"arcmid controlpoint x: "<<d.arcmid.at(1).X()<<" y:"<<d.arcmid.at(1).Y()<<" z:"<<d.arcmid.at(1).Z()<<std::endl;
 
@@ -251,7 +252,7 @@ void MainWindow::load_opencascade_primitives(){
         }
 
         // Ellipses are saved clockwise [cw], startpoint is secpoint.
-        if(DRW::ELLIPSE == (*iter)->eType){ std::cout<<"ellipse"<<std::endl;
+        if(DRW::ELLIPSE == (*iter)->eType){ // std::cout<<"ellipse"<<std::endl;
 
             DRW_Ellipse *ellipse = dynamic_cast<DRW_Ellipse*>(*iter);
 
@@ -297,17 +298,39 @@ void MainWindow::load_opencascade_primitives(){
 
     // At this stage we can create contours from the individual primitives.
     // We do this in the contours class.
-    contours().main(2);
+    contours().main(0.1); // Finding contourpoints hit tollerance in mm.
 
-    offsets().do_offset(5);
+    // First parameter offset, + or -. Second parameter lead-in, lead-out distance, keep value positive.
+    double offset=5;
+    double lead_in=5;
+    double lead_out=5;
+
+    offsets().do_offset(offset,offset_action::offset_contour,lead_in,lead_out);
+    offsets().do_offset(offset,offset_action::lead_base_contour,lead_in,lead_out);
+    offsets().do_offset(offset,offset_action::lead_in_contour,lead_in,lead_out);
+    offsets().do_offset(offset,offset_action::lead_out_contour,lead_in,lead_out);
 
     // Show shapes from datavec
-    for(unsigned int i=0; i<datavec.size(); i++){
-        OpencascadeWidget->show_shape(datavec.at(i).ashape);
+    // for(unsigned int i=0; i<datavec.size(); i++){
+    //    OpencascadeWidget->show_shape(datavec.at(i).ashape);
+    //}
+
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){               // Primairy dxf data
+            OpencascadeWidget->show_shape(contourvec.at(i).primitive_sequence.at(j).ashape);
+        }
+        for(unsigned int j=0; j<contourvec.at(i).offset_sequence.size(); j++){                  // Offset contour data
+            OpencascadeWidget->show_shape(contourvec.at(i).offset_sequence.at(j).ashape);
+        }
     }
 
-    for(unsigned int i=0; i<camvec.size(); i++){
-        OpencascadeWidget->show_shape(camvec.at(i).ashape);
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        std::cout<<"lead-base points.size: "<<contourvec.at(i).lead_base.points.size()<<std::endl;
+        std::cout<<"lead-in   points.size: "<<contourvec.at(i).lead_in.points.size()<<std::endl;
+        std::cout<<"lead-out  points.size: "<<contourvec.at(i).lead_out.points.size()<<std::endl;
+
+        OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);
+        OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);
     }
 
     OpencascadeWidget->zoom_all(); // Zoom to extends. Top view is already set when initializing the opencascadewidget at startup.
@@ -357,6 +380,44 @@ void MainWindow::on_toolButton_stacket_page_plus_pressed()
     std::cout<<"curindex:"<<ui->stackedWidget->currentIndex()<<std::endl;
     //}
 }
+
+void MainWindow::on_spinBox_valueChanged(int arg1)
+{
+    // p = point on contourpath.
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
