@@ -3,6 +3,7 @@
 
 #include <gp_Pnt.hxx>
 #include <AIS_Shape.hxx>
+#include <TopoDS_Compound.hxx>
 
 enum primitive_type {
     point=0,
@@ -27,6 +28,13 @@ enum contour_dir {
     ccw=1,
 };
 
+enum offset_action{
+    offset_contour=0,
+    lead_base_contour=1,
+    lead_in_contour=2,
+    lead_out_contour=3,
+};
+
 struct data {
     Handle(AIS_Shape) ashape;
     primitive_type primitivetype;
@@ -37,12 +45,20 @@ struct data {
     double radius=0; // Radius is used by cavalier functions.
     bool select=0;
 };
-extern std::vector<data> datavec, camvec;
+extern std::vector<data> datavec;
+
+struct lead_in_out {
+    Handle(AIS_Shape) ashape; // The lead-in, lead-out shape (line, arc, etc).
+    std::vector<gp_Pnt> points; // Choose one of the parallel Points to draw the lead-in, lead-out.
+};
 
 struct contour {
     std::vector<data> primitive_sequence;
     contour_dir dir;
     double area=0;
+
+    lead_in_out lead_in, lead_out, lead_base;
+    std::vector<data> offset_sequence;
 };
 extern std::vector<contour> contourvec;
 
@@ -53,3 +69,28 @@ public:
 };
 
 #endif // VARIABLE_H
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

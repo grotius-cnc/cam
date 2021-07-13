@@ -203,7 +203,15 @@ Handle(AIS_Shape) draw_primitives::draw_3d_point(gp_Pnt point){
 }
 
 Handle(AIS_Shape) draw_primitives::draw_3d_line(gp_Pnt point1, gp_Pnt point2){
-    TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(point1,point2);
+    // Check if linelenght>0
+    double l=get_3d_line_lenght(point1,point2);
+    TopoDS_Edge edge;
+    if(l>0){
+        edge = BRepBuilderAPI_MakeEdge(point1,point2);
+    } else {
+        point2.SetX(point2.X()+0.01); // Create a solution to avoid errors.
+        edge=BRepBuilderAPI_MakeEdge(point1,point2);
+    }
     return new AIS_Shape(edge);
 }
 
@@ -449,9 +457,6 @@ Handle(AIS_Shape) draw_primitives::draw_3d_arc_origin_cone_text(std::vector<gp_P
         Ais_shape->AddChild(Ais_child);
     }
 
-
-
-
     // Draw the text id.
     Handle(AIS_Shape) Ais_text=draw_2d_text(text, textheight, points.at(1) /*midpoint*/, 0);
     Ais_text=colorize(Ais_text,Quantity_NOC_BLACK,0.5);
@@ -583,6 +588,10 @@ std::vector<Handle(AIS_Shape)> draw_primitives::draw_3d_arc_lenght(gp_Pnt point1
         std::cout<<"curvelenght:"<<curvelenght<<std::endl;
     }
     return shapevec;
+}
+
+double draw_primitives::get_3d_line_lenght(gp_Pnt point1, gp_Pnt point2){
+    return sqrt(pow(point2.X()-point1.X(),2)+pow(point2.Y()-point1.Y(),2)+pow(point2.Z()-point1.Z(),2));
 }
 
 double draw_primitives::get_3d_arc_lenght(gp_Pnt point1,gp_Pnt point2,gp_Pnt point3, int divisions){

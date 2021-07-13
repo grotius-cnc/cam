@@ -375,77 +375,113 @@ void Opencascade::show_shape(Handle(AIS_Shape) shape){
 
 void Opencascade::get_selections(){ // Updated by jointpos function from mainwindow.
 
+    unsigned int selected_contour=0; bool select=0; int temp=0;
     for(m_context->InitSelected(); m_context->MoreSelected(); m_context->NextSelected()){
-
-        const TopoDS_Shape& aSelShape = m_context->SelectedShape();
-        std::cout<<"selected shape type:"<<aSelShape.ShapeType()<<std::endl;
-        // Shapetype 6=line.
-
-        for(unsigned int i=0; i<datavec.size(); i++){
-            if(m_context->SelectedShape()==datavec.at(i).ashape->Shape()){
-                std::cout<<"match found at datavec i:"<<i<<std::endl;
-
-                // Print some extra content:
-                std::cout<<"primitivetype:"<<datavec.at(i).primitivetype<<std::endl;
+        for(unsigned int i=0; i<contourvec.size(); i++){
+            for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){
+                if(m_context->SelectedShape()==contourvec.at(i).primitive_sequence.at(j).ashape->Shape()){
+                    std::cout<<"selected contour i:"<<i<<std::endl;
+                    // set the next item selected.
+                    selected_contour=i;
+                    select=true;
+                    temp=j;
+                    break;
+                }
             }
         }
-
-        TopExp_Explorer explorer;
-
-        for(explorer.Init(aSelShape, TopAbs_EDGE); explorer.More(); explorer.Next()){
-
-            const TopoDS_Edge& edge = TopoDS::Edge(explorer.Current());
-
-            TopoDS_Vertex v1,v2;
-            TopExp::Vertices(edge,v1,v2);
-            gp_Pnt p1= BRep_Tool::Pnt(v1);
-            gp_Pnt p2= BRep_Tool::Pnt(v2);
-
-            //std::cout<<"edge p1 x: "<<p1.X()<<" y:"<<p1.Y()<<" z:"<<p1.Z()<<std::endl;
-            //std::cout<<"edge p2 x: "<<p2.X()<<" y:"<<p2.Y()<<" z:"<<p2.Z()<<std::endl;
-
-            // An attempt to get data from child items. Not working.
-            //
-            //            TopoDS_Iterator it(aSelShape);
-            //            for(; it.More(); it.Next()){
-            //                const TopoDS_Shape child=it.Value();
-            //                std::cout<<"child shapetype:"<<child.ShapeType()<<std::endl;
-
-            //                TopExp_Explorer expl;
-
-            //                for(expl.Init(child, TopAbs_ShapeEnum(7)); expl.More(); expl.Next()){
-
-            //                    /* Enum shape types.
-            //                    TopAbs_COMPOUND,
-            //                    TopAbs_COMPSOLID,
-            //                    TopAbs_SOLID,
-            //                    TopAbs_SHELL,
-            //                    TopAbs_FACE,
-            //                    TopAbs_WIRE,
-            //                    TopAbs_EDGE,
-            //                    TopAbs_VERTEX, ==> 7
-            //                    TopAbs_SHAPE
-            //                    */
-
-            //                    std::cout<<"inside shape enum 7"<<std::endl;
-            //                    const TopoDS_Vertex& vertex = TopoDS::Vertex(expl.Current());
-            //                    gp_Pnt p= BRep_Tool::Pnt(vertex);
-            //                    std::cout<<"    child vertex p x: "<<p.X()<<" y:"<<p.Y()<<" z:"<<p.Z()<<std::endl;
-
-            //                }
-            //            }
-
-            //std::cout<<"NEXT-SHAPE"<<std::endl;
-        }
-
-        // A example how to get points from a vertex.
-        //
-        //        for(explorer.Init(aSelShape, TopAbs_VERTEX); explorer.More(); explorer.Next()){
-        //            const TopoDS_Vertex& vertex = TopoDS::Vertex(explorer.Current());
-        //            gp_Pnt p1= BRep_Tool::Pnt(vertex);
-        //            std::cout<<"vertex p x: "<<p1.X()<<" y:"<<p1.Y()<<" z:"<<p1.Z()<<std::endl;
-        //        }
     }
+
+    if(select){
+        m_context->AddOrRemoveSelected(contourvec.at(selected_contour).primitive_sequence.at(temp).ashape,1); // De-select the clicked item, un-highlight.
+        for(unsigned int j=0; j<contourvec.at(selected_contour).primitive_sequence.size(); j++){
+
+            m_context->AddOrRemoveSelected(contourvec.at(selected_contour).primitive_sequence.at(j).ashape,1); // Select the contour, hightlight it.
+        }
+    }
+
+    //    for(m_context->InitSelected(); m_context->MoreSelected(); m_context->NextSelected()){
+
+    //        const TopoDS_Shape& aSelShape = m_context->SelectedShape();
+    //        // std::cout<<"selected shape type:"<<aSelShape.ShapeType()<<std::endl;
+    //        // Shapetype 6=line.
+
+    //        /*
+    //        for(unsigned int i=0; i<datavec.size(); i++){
+    //            if(m_context->SelectedShape()==datavec.at(i).ashape->Shape()){
+    //                std::cout<<"match found at datavec i:"<<i<<std::endl;
+
+    //                // Print some extra content:
+    //                std::cout<<"primitivetype:"<<datavec.at(i).primitivetype<<std::endl;
+    //            }
+    //        }
+    //        */
+
+    //        for(unsigned int i=0; i<contourvec.size(); i++){
+    //            for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){
+    //                if(m_context->SelectedShape()==contourvec.at(i).primitive_sequence.at(j).ashape->Shape()){
+    //                    std::cout<<"contourvec i:"<<i<<std::endl;
+    //                    // set the next item selected.
+
+    //                }
+    //            }
+    //        }
+
+    //        TopExp_Explorer explorer;
+
+    //        for(explorer.Init(aSelShape, TopAbs_EDGE); explorer.More(); explorer.Next()){
+
+    //            const TopoDS_Edge& edge = TopoDS::Edge(explorer.Current());
+
+    //            TopoDS_Vertex v1,v2;
+    //            TopExp::Vertices(edge,v1,v2);
+    //            gp_Pnt p1= BRep_Tool::Pnt(v1);
+    //            gp_Pnt p2= BRep_Tool::Pnt(v2);
+
+    //            //std::cout<<"edge p1 x: "<<p1.X()<<" y:"<<p1.Y()<<" z:"<<p1.Z()<<std::endl;
+    //            //std::cout<<"edge p2 x: "<<p2.X()<<" y:"<<p2.Y()<<" z:"<<p2.Z()<<std::endl;
+
+    //            // An attempt to get data from child items. Not working.
+    //            //
+    //            //            TopoDS_Iterator it(aSelShape);
+    //            //            for(; it.More(); it.Next()){
+    //            //                const TopoDS_Shape child=it.Value();
+    //            //                std::cout<<"child shapetype:"<<child.ShapeType()<<std::endl;
+
+    //            //                TopExp_Explorer expl;
+
+    //            //                for(expl.Init(child, TopAbs_ShapeEnum(7)); expl.More(); expl.Next()){
+
+    //            //                    /* Enum shape types.
+    //            //                    TopAbs_COMPOUND,
+    //            //                    TopAbs_COMPSOLID,
+    //            //                    TopAbs_SOLID,
+    //            //                    TopAbs_SHELL,
+    //            //                    TopAbs_FACE,
+    //            //                    TopAbs_WIRE,
+    //            //                    TopAbs_EDGE,
+    //            //                    TopAbs_VERTEX, ==> 7
+    //            //                    TopAbs_SHAPE
+    //            //                    */
+
+    //            //                    std::cout<<"inside shape enum 7"<<std::endl;
+    //            //                    const TopoDS_Vertex& vertex = TopoDS::Vertex(expl.Current());
+    //            //                    gp_Pnt p= BRep_Tool::Pnt(vertex);
+    //            //                    std::cout<<"    child vertex p x: "<<p.X()<<" y:"<<p.Y()<<" z:"<<p.Z()<<std::endl;
+
+    //            //                }
+    //            //            }
+
+    //            //std::cout<<"NEXT-SHAPE"<<std::endl;
+    //        }
+
+    //        // A example how to get points from a vertex.
+    //        //
+    //        //        for(explorer.Init(aSelShape, TopAbs_VERTEX); explorer.More(); explorer.Next()){
+    //        //            const TopoDS_Vertex& vertex = TopoDS::Vertex(explorer.Current());
+    //        //            gp_Pnt p1= BRep_Tool::Pnt(vertex);
+    //        //            std::cout<<"vertex p x: "<<p1.X()<<" y:"<<p1.Y()<<" z:"<<p1.Z()<<std::endl;
+    //        //        }
+    //    }
 }
 
 void Opencascade::delete_selections(){
@@ -669,6 +705,8 @@ void Opencascade::mousePressEvent(QMouseEvent *event)
         m_y_max=event->y();
         m_view->StartRotation(event->x(),event->y());
     }
+
+    get_selections();
 }
 
 void Opencascade::mouseReleaseEvent(QMouseEvent *event)
@@ -701,6 +739,12 @@ void Opencascade::mouseMoveEvent(QMouseEvent *event)
     {
         m_context->MoveTo(event->pos().x(),event->pos().y(),m_view,Standard_True);
     }
+
+    // std::cout<<"event x: "<<event->pos().x()<<std::endl;
+    // std::cout<<"event y: "<<event->pos().y()<<std::endl;
+
+    // std::cout<<"event x: "<<event->x()<<std::endl;
+    // std::cout<<"event y: "<<event->y()<<std::endl;
 }
 
 void Opencascade::wheelEvent(QWheelEvent *event)

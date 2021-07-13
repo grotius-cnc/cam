@@ -13,7 +13,7 @@ public:
     offsets();
 
     //! Example of standard offset use -abs value for negative offset.
-    void do_offset(double offset);
+    void do_offset(double offset, enum offset_action action, double lead_in, double lead_out);
 
     //! Helper functions, grabbed from old code example :
     std::vector<double> arc_bulge(data p /* primitive */);

@@ -12,13 +12,22 @@ offsets::offsets()
 
 }
 
-void offsets::do_offset(double offset){
+
+void offsets::do_offset(double offset, offset_action action, double lead_in, double lead_out){
+
+    if(offset<0){
+        lead_in=lead_in*-1;
+        lead_out=lead_out*-1;
+    }
+
+    Quantity_Color color=Quantity_NOC_RED;
 
     for(unsigned int i=0; i<contourvec.size(); i++){
 
         if(contourvec.at(i).primitive_sequence.at(0).contourtype==contour_type::multi_closed || contourvec.at(i).primitive_sequence.at(0).contourtype==contour_type::single_closed){
-
+            unsigned int ii=i;
             cavc::Polyline<double> outerloop;
+
             for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){
 
                 if(contourvec.at(i).primitive_sequence.at(j).primitivetype==primitive_type::line){
@@ -46,76 +55,139 @@ void offsets::do_offset(double offset){
                 }
             }
             outerloop.isClosed() = true;
+
+            // Add islands:
+            // std::vector<cavc::Polyline<double>> islands; // Islands must be clockwise
+            // cavc::Polyline<double> island;
+            // island.addVertex(x,y,0 /*bulge*/);
+            // islands.push_back(island);
+
+
             // Process data
-            std::vector<cavc::Polyline<double>> results = cavc::parallelOffset(outerloop, offset);
-            std::cout<<"cavalier results.size: "<<results.size()<<std::endl;
+            std::vector<cavc::Polyline<double>> results;
+            if(action==offset_action::offset_contour || action==offset_action::lead_base_contour){
+                results = cavc::parallelOffset(outerloop, offset);
+            }
+            if(action==offset_action::lead_in_contour){
+                results = cavc::parallelOffset(outerloop, offset+lead_in);
+            }
+            if(action==offset_action::lead_out_contour){
+                results = cavc::parallelOffset(outerloop, offset+lead_out);
+            }
+
+            // std::cout<<"cavalier results.size: "<<results.size()<<std::endl;
 
             // Draw processed data
             struct data d;
             for(unsigned int i=0; i<results.size(); i++){ //cw loops
                 for(unsigned int j=0; j<results.at(i).vertexes().size()-1; j++){
 
+                    double xs=results.at(i).vertexes().at(j).x();
+                    double ys=results.at(i).vertexes().at(j).y();
+                    double xe=results.at(i).vertexes().at(j+1).x();
+                    double ye=results.at(i).vertexes().at(j+1).y();
+
                     if(results.at(i).vertexes().at(j).bulge()==0){ //line
-                        double xs=results.at(i).vertexes().at(j).x();
-                        double ys=results.at(i).vertexes().at(j).y();
-                        double xe=results.at(i).vertexes().at(j+1).x();
-                        double ye=results.at(i).vertexes().at(j+1).y();
-
-                        Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({xs,ys,0},{xe,ye,0});
-                        ashape=draw_primitives().colorize(ashape,Quantity_NOC_RED,1);
-                        d.ashape=ashape;
-                        camvec.push_back(d);
-
+                        if(action==offset_action::offset_contour){
+                            Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({xs,ys,0},{xe,ye,0});
+                            ashape=draw_primitives().colorize(ashape,color,1);
+                            d.ashape=ashape;
+                            contourvec.at(ii).offset_sequence.push_back(d);
+                        }
                     }
+
                     if(results.at(i).vertexes().at(j).bulge()!=0){ //arc
 
-                        std::cout<<"bulge: "<<results.at(i).vertexes().at(j).bulge()<<std::endl;
-
-                        double xs=results.at(i).vertexes().at(j).x();
-                        double ys=results.at(i).vertexes().at(j).y();
-                        double xe=results.at(i).vertexes().at(j+1).x();
-                        double ye=results.at(i).vertexes().at(j+1).y();
+                        // std::cout<<"bulge: "<<results.at(i).vertexes().at(j).bulge()<<std::endl;
 
                         POINT p=bulge_to_arc_controlpoint({xs,ys,0},{xe,ye,0},results.at(i).vertexes().at(j).bulge());
-                        Handle(AIS_Shape) ashape=draw_primitives().draw_3p_3d_arc({xs,ys,0},{p.x,p.y,0},{xe,ye,0});
-                        ashape=draw_primitives().colorize(ashape,Quantity_NOC_RED,1);
-                        d.ashape=ashape;
-                        camvec.push_back(d);
 
+                        if(action==offset_action::offset_contour){
+                            Handle(AIS_Shape) ashape=draw_primitives().draw_3p_3d_arc({xs,ys,0},{p.x,p.y,0},{xe,ye,0});
+                            ashape=draw_primitives().colorize(ashape,color,1);
+                            d.ashape=ashape;
+                            contourvec.at(ii).offset_sequence.push_back(d);
+                        }
+                    }
+
+                    if(action==offset_action::lead_base_contour){
+                        contourvec.at(ii).lead_base.points.push_back({xs,ys,0});
+                    }
+                    if(action==offset_action::lead_in_contour){
+                        contourvec.at(ii).lead_in.points.push_back({xs,ys,0});
+                    }
+                    if(action==offset_action::lead_out_contour){
+                        contourvec.at(ii).lead_out.points.push_back({xs,ys,0});
                     }
                 }
                 //add last primitive of contour
+                double xs=results.at(i).vertexes().back().x();
+                double ys=results.at(i).vertexes().back().y();
+                double xe=results.at(i).vertexes().front().x();
+                double ye=results.at(i).vertexes().front().y();
+
                 if(results.at(i).vertexes().back().bulge()==0){ //line
-
-                    double xs=results.at(i).vertexes().back().x();
-                    double ys=results.at(i).vertexes().back().y();
-                    double xe=results.at(i).vertexes().front().x();
-                    double ye=results.at(i).vertexes().front().y();
-
-                    Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({xs,ys,0},{xe,ye,0});
-                    ashape=draw_primitives().colorize(ashape,Quantity_NOC_RED,1);
-                    d.ashape=ashape;
-                    camvec.push_back(d);
-
+                    if(action==offset_action::offset_contour){
+                        Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({xs,ys,0},{xe,ye,0});
+                        ashape=draw_primitives().colorize(ashape,color,1);
+                        d.ashape=ashape;
+                        contourvec.at(ii).offset_sequence.push_back(d);
+                    }
                 }
                 if(results.at(i).vertexes().back().bulge()!=0){ //arc
 
-                    std::cout<<"bulge last arc: "<<results.at(i).vertexes().back().bulge()<<std::endl;
-
-                    double xs=results.at(i).vertexes().back().x();
-                    double ys=results.at(i).vertexes().back().y();
-                    double xe=results.at(i).vertexes().front().x();
-                    double ye=results.at(i).vertexes().front().y();
+                    // std::cout<<"bulge last arc: "<<results.at(i).vertexes().back().bulge()<<std::endl;
 
                     POINT p=bulge_to_arc_controlpoint({xs,ys,0},{xe,ye,0},results.at(i).vertexes().back().bulge());
-                    Handle(AIS_Shape) ashape=draw_primitives().draw_3p_3d_arc({xs,ys,0},{p.x,p.y,0},{xe,ye,0});
-                    ashape=draw_primitives().colorize(ashape,Quantity_NOC_RED,1);
-                    d.ashape=ashape;
-                    camvec.push_back(d);
+
+                    if(action==offset_action::offset_contour){
+                        Handle(AIS_Shape) ashape=draw_primitives().draw_3p_3d_arc({xs,ys,0},{p.x,p.y,0},{xe,ye,0});
+                        ashape=draw_primitives().colorize(ashape,color,1);
+                        d.ashape=ashape;
+                        contourvec.at(ii).offset_sequence.push_back(d);
+                    }
                 }
             }
+        } // std::cout<<""<<std::endl;
 
-        } std::cout<<""<<std::endl;
+        // Create lead-in shapes.
+        for(unsigned int k=0; k<contourvec.at(i).lead_base.points.size(); k++){
+            for(unsigned int l=0; l<contourvec.at(i).lead_in.points.size(); l++){
+                gp_Pnt p1,p2;
+                p1=contourvec.at(i).lead_in.points.at(l);
+                p2=contourvec.at(i).lead_base.points.at(k);
+                double lenght=draw_primitives().get_3d_line_lenght(p1,p2);
+                std::cout<<"lenght: "<<lenght<<std::endl;
+                if(lenght==lead_in){
+                    contourvec.at(i).lead_in.ashape = draw_primitives().draw_3d_line(p1,p2);
+                    contourvec.at(i).lead_in.ashape = draw_primitives().colorize(contourvec.at(i).lead_in.ashape,color,0);
+                    // OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);
+                    // Stop, exit.
+                    k=contourvec.at(i).lead_base.points.size();
+                    break;
+                }
+            }
+        }
+
+        // Create lead-out shapes.
+        for(unsigned int k=0; k<contourvec.at(i).lead_base.points.size(); k++){
+            for(unsigned int l=0; l<contourvec.at(i).lead_out.points.size(); l++){
+                gp_Pnt p1,p2;
+                p1=contourvec.at(i).lead_out.points.at(l);
+                p2=contourvec.at(i).lead_base.points.at(k);
+                double lenght=draw_primitives().get_3d_line_lenght(p1,p2);
+                std::cout<<"lenght: "<<lenght<<std::endl;
+                if(lenght==lead_out){
+                    contourvec.at(i).lead_out.ashape = draw_primitives().draw_3d_line(p1,p2);
+                    contourvec.at(i).lead_out.ashape = draw_primitives().colorize(contourvec.at(i).lead_out.ashape,color,0);
+                    // OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);
+                    // Stop, exit.
+                    k=contourvec.at(i).lead_base.points.size();
+                    break;
+                }
+            }
+        }
+
     }
 }
 
@@ -134,8 +206,8 @@ std::vector<double> offsets::arc_bulge(data p /* primitive */){
     POINT a={p.start.X(),p.start.Y(),p.start.Z()};   // it->start;
     POINT b={p.end.X(),p.end.Y(),p.end.Z()};
 
-    std::cout<<"arc start x:"<<p.start.X()<<" y:"<<p.start.Y()<<" z:"<<p.start.Z()<<std::endl;
-    std::cout<<"arc end   x:"<<p.end.X()  <<" y:"<<p.end.Y()  <<" z:"<<p.end.Z()  <<std::endl;
+    // std::cout<<"arc start x:"<<p.start.X()<<" y:"<<p.start.Y()<<" z:"<<p.start.Z()<<std::endl;
+    // std::cout<<"arc end   x:"<<p.end.X()  <<" y:"<<p.end.Y()  <<" z:"<<p.end.Z()  <<std::endl;
 
     POINT control={p.arcmid.at(1).X(),p.arcmid.at(1).Y(),p.arcmid.at(1).Z()};
     double d=arc_determinant(a,control,b);
