@@ -16,4 +16,5 @@ Currently supporting :
 
 Next to code :
 - contour depth sequence, that will result in producing ccw contours by swapping the cw contour. Estimated coding time : 3-5 hours.
+- Pocket operations with or without islands.
 - Output gcode. 
