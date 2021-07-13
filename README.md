@@ -11,8 +11,9 @@ This example show's how to use the dxfrw library and display the dxf content wit
 Depends : Qt + opencascade library
 
 Currently supporting :
-- cw contours
-- lead-in + lead-out
+- cw contours offsets. Offset value - or +. 
+- lead-in + lead-out. Value in mm. It will iterate trough the contours to find a nice fit.
 
 Next to code :
-- contour depth sequence, that will result in producing ccw contours by swapping the cw contour.
+- contour depth sequence, that will result in producing ccw contours by swapping the cw contour. Estimated coding time : 3-5 hours.
+- Output gcode. 
