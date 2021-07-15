@@ -13,11 +13,12 @@ Depends : Qt + opencascade library
 Currently implemented:
 
 - Dxf read.
-- Opencascade cad view.
+- Opencascade cad view, selecting contours by mouse click.
 - Contour offsets cw, ccw.
 - Depth sequence, cut sequence. (thermal distortion algoritme).
 - Lead-in, lead-out.
 - Generates a gcode.ngc output file located in build directory.
+- Can add line-numbers to the gcode.ngc file.
 
 Gcode output tested:
 ![gcode](https://user-images.githubusercontent.com/44880102/125856968-7a27359c-bccd-45f4-8186-6dae3863da6f.jpg)
