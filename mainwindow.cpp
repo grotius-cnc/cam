@@ -26,7 +26,6 @@ MainWindow::~MainWindow()
 void MainWindow::Update_Opencascade()
 {
     OpencascadeWidget->Redraw();
-    //OpencascadeWidget->get_selections();
 }
 
 bool MainWindow::open_dxf_file(std::string filename){
@@ -296,14 +295,16 @@ void MainWindow::load_opencascade_primitives(){
         }
     }
 
+
+
     // At this stage we can create contours from the individual primitives.
     // We do this in the contours class.
     contours().main(0.1); // Finding contourpoints hit tollerance in mm.
 
     // First parameter offset, + or -. Second parameter lead-in, lead-out distance, keep value positive.
-    double offset=5;
-    double lead_in=5;
-    double lead_out=5;
+    double offset=2;
+    double lead_in=2;
+    double lead_out=2;
 
     offsets().do_offset(offset,offset_action::offset_contour,lead_in,lead_out);
     offsets().do_offset(offset,offset_action::lead_base_contour,lead_in,lead_out);
@@ -316,22 +317,21 @@ void MainWindow::load_opencascade_primitives(){
     //}
 
     for(unsigned int i=0; i<contourvec.size(); i++){
-        for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){               // Primairy dxf data
+        for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){               // Primairy dxf data.
             OpencascadeWidget->show_shape(contourvec.at(i).primitive_sequence.at(j).ashape);
         }
-        for(unsigned int j=0; j<contourvec.at(i).offset_sequence.size(); j++){                  // Offset contour data
+        for(unsigned int j=0; j<contourvec.at(i).offset_sequence.size(); j++){                  // Offset contour data.
             OpencascadeWidget->show_shape(contourvec.at(i).offset_sequence.at(j).ashape);
         }
     }
 
     for(unsigned int i=0; i<contourvec.size(); i++){
-        std::cout<<"lead-base points.size: "<<contourvec.at(i).lead_base.points.size()<<std::endl;
-        std::cout<<"lead-in   points.size: "<<contourvec.at(i).lead_in.points.size()<<std::endl;
-        std::cout<<"lead-out  points.size: "<<contourvec.at(i).lead_out.points.size()<<std::endl;
-
-        OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);
+        OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);                         // Show lead-in, lead-out shapes.
         OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);
     }
+
+    gcode_setup gc;
+    gcode().generate(gc);
 
     OpencascadeWidget->zoom_all(); // Zoom to extends. Top view is already set when initializing the opencascadewidget at startup.
 }

@@ -32,6 +32,7 @@ SOURCES += \
     libdxfrw/intern/rscodec.cpp \
     libdxfrw/libdwgr.cpp \
     libdxfrw/libdxfrw.cpp \
+    libgcode/gcode.cpp \
     libocc/draw_primitives.cpp \
     libspline/bezier_spline.cpp \
     libspline/cubic_spline.cpp \
@@ -72,6 +73,7 @@ HEADERS += \
     libdxfrw/libdwgr.h \
     libdxfrw/libdxfrw.h \
     libdxfrw/main_doc.h \
+    libgcode/gcode.h \
     libocc/draw_primitives.h \
     libspline/bezier_spline.h \
     libspline/cubic_spline.h \
@@ -90,6 +92,7 @@ INCLUDEPATH+=   libdxfrw/ \
                 libcavalier/include/cavc/ \
                 libcontour/ \
                 libdata/ \
+                libgcode/ \
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

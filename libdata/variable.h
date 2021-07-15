@@ -41,9 +41,10 @@ struct data {
     contour_type contourtype=contour_type::none;
     //! Startpoint, endpoint
     gp_Pnt start{0,0,0}, end{0,0,0}, center{0,0,0}; // Center is used by cavalier functions.
-    std::vector<gp_Pnt> control, arcmid; // Arcmid is used by cavalier function.
+    std::vector<gp_Pnt> control, arcmid; // Arcmid is used by cavalier function and is the point at half way arc circumfence.
     double radius=0; // Radius is used by cavalier functions.
-    bool select=0;
+    double bulge=0; // For arc's to define if the arc is [cw] or [ccw]. bulge<0=g2
+    bool select=0; // Helper for contour algoritme.
 };
 extern std::vector<data> datavec;
 
@@ -58,9 +59,32 @@ struct contour {
     double area=0;
 
     lead_in_out lead_in, lead_out, lead_base;
-    std::vector<data> offset_sequence;
+    std::vector<data> offset_sequence; // Primitives in cw order.
+
+    // Contour depth.
+    std::vector<unsigned int> childcontours;
+    bool select=false;
+    int depth=0;
 };
 extern std::vector<contour> contourvec;
+
+struct gcode_setup{
+    std::string filename="gcode.ngc";
+    std::string linenumber_format="N";
+    bool print_linenumbers=true;
+    double lead_in=5;
+    double lead_out=1;
+    double offset=2;
+    double travelheight=10;
+    double pierceheight=8;
+    double piercespeed=500;
+    double cutheight=0;
+    double power=45;
+    double feedrate=1400;
+
+    std::vector<std::string> intro;
+    std::vector<std::string> outtro;
+};
 
 class variable
 {

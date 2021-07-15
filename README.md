@@ -1,6 +1,4 @@
-
-![joco-power](https://user-images.githubusercontent.com/44880102/125472029-9a0c78d1-e100-40b5-8e37-89e1f020f809.jpg)
-
+![joco-power](https://user-images.githubusercontent.com/44880102/124219884-e549cc80-daca-11eb-8059-49dc5e1399df.jpg)
 # QT_dxfrw
 Qt project example of the dxfrw c++ library
 
@@ -10,11 +8,3 @@ This example show's how to use the dxfrw library and display the dxf content wit
 
 Depends : Qt + opencascade library
 
-Currently supporting :
-- cw contours offsets. Offset value - or +. 
-- lead-in + lead-out. Value in mm. It will iterate trough the contours to find a nice fit.
-
-Next to code :
-- contour depth sequence, that will result in producing ccw contours by swapping the cw contour. Estimated coding time : 3-5 hours.
-- Pocket operations with or without islands.
-- Output gcode. 

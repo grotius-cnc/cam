@@ -1,4 +1,5 @@
-#include "contours.h"
+﻿#include "contours.h"
+#include <math.h>
 
 contours::contours()
 {
@@ -12,7 +13,172 @@ void contours::main(double tol){
     check_for_multi_contours(tol);
     check_for_single_open_contours(tol);
     area(); // Convert all contours to clockwise [cw].
+
+    add_contour_depth_sequence();   // Wich contour is within another. This function gives a depth sequence as output saved as contourvec[i].depth
+    add_contour_ccw();              // All contours are standard cw. When depth sequence is know'n, we can apply the ccw dir to thee contours.
+
     // print_result();
+    // print_depth_sequence();
+}
+
+void contours::add_contour_ccw(){
+    // Find maxdepth value.
+    int maxdepth=0;
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        if(maxdepth<contourvec.at(i).depth){
+            maxdepth=contourvec.at(i).depth;
+        }
+    }
+    // std::cout<<"maxdepth:"<<maxdepth<<std::endl;
+
+    // Swap contours to [ccw] if depth value is non-equal.
+    for(int i=0; i<maxdepth+1; i++){ // Added +1 to solve error when maxdepth was 1.
+        if(i%2==0){ // %2 Slogan to find equal or non-equal.
+            // [cw]
+        } else {
+            for(unsigned int j=0; j<contourvec.size(); j++){ // [ccw]
+                if(contourvec.at(j).depth==i){
+                    swap_contour(j);
+                }
+            }
+        }
+    }
+}
+
+void contours::add_contour_depth_sequence(){
+
+    std::vector<unsigned int> contourlist;
+    std::vector<unsigned int> insidelist;
+
+    // Create a point array of each contour. Then check if a external contourpoint is inside this polygon.
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        contourlist.push_back(i);
+        std::vector<gp_Pnt> polygon; // Save points of a contour.
+        for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){
+            polygon.push_back(contourvec.at(i).primitive_sequence.at(j).start);
+            for(unsigned int k=0; k<contourvec.at(i).primitive_sequence.at(j).control.size(); k++){
+                polygon.push_back(contourvec.at(i).primitive_sequence.at(j).control.at(k));
+            }
+        }
+        polygon.push_back(contourvec.at(i).primitive_sequence.back().end); // Last point of polygon.
+
+        // Perform a pip for each external contour.
+        for(unsigned int ii=0; ii<contourvec.size(); ii++){
+            if(i!=ii){ // Source contour may not be target contour.
+                int ok=point_in_polygon(polygon,contourvec.at(ii).primitive_sequence.front().start); // A point.
+                if(ok==1){ // Point is inside this contour, save id of contour.
+                    contourvec.at(i).childcontours.push_back(ii);
+                }
+            }
+        }
+    }
+
+    /*
+    // Print result of child contours.
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        for(unsigned int j=0; j<contourvec.at(i).childcontours.size(); j++){
+            std::cout<<"Contourvec.at: "<<i<<" child contour: "<<contourvec.at(i).childcontours.at(j)<<std::endl;
+        }
+    } std::cout<<" "<<std::endl; */
+
+    // Write depth values to the contours.
+    // Depth 0 is toplevel. The one's with no insides.
+    // Depth 1 is a inside contour of depth 0.
+    // Depth 2 is a inside contour of depth 1. And so on.
+
+    unsigned int depth=0;
+    // Depth 0, init loop.
+    contourlist=get_toplevel(contourlist);
+    for(unsigned int i=0; i<contourlist.size(); i++){
+        contourvec.at(contourlist.at(i)).depth=depth;
+        // std::cout<<"contourlist depth 0: "<<contourlist.at(i)<<std::endl;
+    }
+
+    // Depth 1+ auto loop until everything is done.
+    while(contourlist.size()!=0){
+        depth++;
+        insidelist=get_childs(contourlist);
+        contourlist=get_toplevel(insidelist);
+        for(unsigned int i=0; i<contourlist.size(); i++){
+            contourvec.at(contourlist.at(i)).depth=depth;
+            // std::cout<<"contourlist dept "<<depth<<": "<<contourlist.at(i)<<std::endl;
+        }
+    }
+}
+
+std::vector<unsigned int> contours::get_childs(std::vector<unsigned int> list){
+    std::vector<unsigned int> result;
+    for(unsigned int i=0; i<list.size(); i++){
+        for(unsigned int j=0; j<contourvec.at(list.at(i)).childcontours.size(); j++){
+            //no duplicates
+            if(std::find(result.begin(), result.end(),contourvec.at(list.at(i)).childcontours.at(j))!=result.end()){
+                //do nothing
+            } else {
+                result.push_back(contourvec.at(list.at(i)).childcontours.at(j));
+            }
+        }
+    }
+    return result;
+}
+
+std::vector<unsigned int> contours::get_toplevel(std::vector<unsigned int> list){
+
+    // Save the childs of the list.
+    std::vector<unsigned int> childs, result;
+    for(unsigned int i=0; i<list.size(); i++){
+        for(unsigned int j=0; j<contourvec.at(list.at(i)).childcontours.size(); j++){
+            //no duplicates
+            if(std::find(childs.begin(), childs.end(),contourvec.at(list.at(i)).childcontours.at(j))!=childs.end()){
+                //do nothing
+            } else {
+                childs.push_back(contourvec.at(list.at(i)).childcontours.at(j));
+            }
+        }
+    }
+
+    for(unsigned int i=0; i<childs.size(); i++){
+        // std::cout<<"childs: "<<childs.at(i)<<std::endl;
+    }
+
+    result=lista_min_listb(list,childs);
+    return result;
+}
+
+std::vector<unsigned int> contours::lista_min_listb(std::vector<unsigned int> lista, std::vector<unsigned int> listb){
+
+    std::vector<unsigned int> resultlist;
+    std::vector<unsigned int>::iterator it,it1;
+    resultlist=lista;
+
+    for(it=resultlist.begin(); it<resultlist.end(); it++){
+        for(it1=listb.begin(); it1<listb.end(); it1++){
+            if(*it==*it1){
+                resultlist.erase(it);
+            }
+        }
+    }
+    //print output
+    //    std::cout<<"contourlist min depthlist:"<<std::endl;
+    //    for(int i=0; i<contourlist_min_depthlist.size(); i++){
+    //        std::cout<<contourlist_min_depthlist.at(i)<<std::endl;
+    //    }
+    return resultlist;
+}
+
+int contours::point_in_polygon(std::vector<gp_Pnt> polygon, gp_Pnt point){
+
+    int n = polygon.size();
+    // pos = array of x,y positions of the polygon to investegate
+    // x,y = point to check inside the polygon
+    // c = 1 if true
+
+    int i, j, c = 0;
+    for (i = 0, j = n-1; i < n; j = i++) {
+        if ( ((polygon.at(i).Y()>point.Y()) != (polygon.at(j).Y()>point.Y())) && (point.X() < (polygon.at(j).X()-polygon.at(i).X()) * (point.Y()-polygon.at(i).Y()) / (polygon.at(j).Y()-polygon.at(i).Y()) + polygon.at(i).X()) ){
+            c = !c;
+        }
+    }
+    return c;
 }
 
 void contours::swap_contour(unsigned int i /*contourvec.at(i)*/){
@@ -348,6 +514,7 @@ void contours::print_result(){
     for(unsigned int i=0; i<contourvec.size(); i++){
         std::cout<<"contournumber: "<<i<<std::endl;
         std::cout<<"contourarea  : "<<contourvec.at(i).area<<std::endl;
+        std::cout<<"contourdepth : "<<contourvec.at(i).depth<<std::endl;
         for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){
 
             std::cout<<"    contoursequence         : " << j <<std::endl;
@@ -365,12 +532,51 @@ void contours::print_result(){
 
 }
 
+void contours::print_depth_sequence(){
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        std::cout<<"contournumber: "<<i<<" depth:"<<contourvec.at(i).depth<<std::endl;
+    }
+}
 
 
 
 
 
 
+//// Find childs of selected contours.
+//std::vector<unsigned int> leftoverlist;
+//for(unsigned int i=0; i<contourvec.size(); i++){
+//    if(contourvec.at(i).select==true){
+//        // Mark childs with new depth.
+//        for(unsigned int j=0; j<contourvec.at(i).childcontours.size(); j++){
+//            contourvec.at(contourvec.at(i).childcontours.at(j)).depth=depth;
+//            leftoverlist.push_back(contourvec.at(i).childcontours.at(j));
+//        }
+//    }
+//}
+
+//// Print result of leftoverlist.
+//for(unsigned int i=0; i<leftoverlist.size(); i++){
+//    std::cout<<"leftoverlist: "<<leftoverlist.at(i)<<std::endl;
+//}
+
+//// Get childs of the leftoverlist.
+//std::vector<unsigned int> insideslist;
+//for(unsigned int i=0; i<leftoverlist.size(); i++){
+//    unsigned int k=leftoverlist.at(i);
+//    for(unsigned int j=0; j<contourvec.at(k).childcontours.size(); j++){
+//        insideslist.push_back(contourvec.at(k).childcontours.at(j));
+//        std::cout<<"childs leftoverlist: "<<contourvec.at(k).childcontours.at(j)<<std::endl;
+//    }
+//}
+
+//// Remove insides from leftoverlist.
+//std::vector<unsigned int> resultlist = lista_min_listb(leftoverlist,insideslist);
+
+//// Print result of toplevellist
+//for(unsigned int i=0; i<resultlist.size(); i++){
+//    std::cout<<"result list: "<<resultlist.at(i)<<std::endl;
+//}
 
 
 

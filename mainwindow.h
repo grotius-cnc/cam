@@ -20,6 +20,7 @@ using namespace occ;
 
 #include "contours.h"
 #include "offsets.h"
+#include "gcode.h"
 
 #include <QMainWindow>
 #include <QTimer>
