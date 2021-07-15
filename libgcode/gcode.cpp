@@ -41,15 +41,15 @@ void gcode::generate(gcode_setup gc){
         for(unsigned int j=0; j<contourvec.size(); j++){
             if(contourvec.at(j).depth==i){
 
-                myfile<<line_nr<<"(Contour id:"<<j<<")"<<"\n";
+                myfile<<new_line_nr(pr)<<"(Contour id:"<<j<<")"<<"\n";
 
                 // Contour lead-in
                 std::vector<gp_Pnt> pntvec=get_lead_in_points(j);
-                myfile<<line_nr<<"G0 X"<<pntvec.front().X()<<" Y"<<pntvec.front().Y()<<" Z"<<gc.travelheight<<"\n";
-                myfile<<line_nr<<"G0 Z"<<gc.pierceheight<<"\n";
-                myfile<<line_nr<<"M3 S"<<gc.power<<"\n";
-                myfile<<line_nr<<"G1 Z"<<gc.cutheight<<" F"<<gc.piercespeed<<"\n";
-                myfile<<line_nr<<"G1 X"<<pntvec.back().X()<<" Y"<<pntvec.back().Y()<<" F"<<gc.feedrate<<"\n";
+                myfile<<new_line_nr(pr)<<"G0 X"<<pntvec.front().X()<<" Y"<<pntvec.front().Y()<<" Z"<<gc.travelheight<<"\n";
+                myfile<<new_line_nr(pr)<<"G0 Z"<<gc.pierceheight<<"\n";
+                myfile<<new_line_nr(pr)<<"M3 S"<<gc.power<<"\n";
+                myfile<<new_line_nr(pr)<<"G1 Z"<<gc.cutheight<<" F"<<gc.piercespeed<<"\n";
+                myfile<<new_line_nr(pr)<<"G1 X"<<pntvec.back().X()<<" Y"<<pntvec.back().Y()<<" F"<<gc.feedrate<<"\n";
 
                 // Find the contourpoint that is at the lead-in position.
                 // Rotate the primitive vector if not.
@@ -67,7 +67,7 @@ void gcode::generate(gcode_setup gc){
                     for(unsigned int k=0; k<contourvec.at(j).offset_sequence.size(); k++){
                         // [G1]
                         if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::line){
-                            myfile<<"G1 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
+                            myfile<<new_line_nr(pr)<<"G1 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
                                  <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
                                 <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
                                <<" F"<<gc.feedrate
@@ -75,7 +75,7 @@ void gcode::generate(gcode_setup gc){
                         }
                         // [G2] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
                         if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::arc && contourvec.at(j).offset_sequence.at(k).bulge<0){
-                            myfile<<"G2 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
+                            myfile<<new_line_nr(pr)<<"G2 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
                                  <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
                                 <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
                                <<" I"<<contourvec.at(j).offset_sequence.at(k).center.X()-contourvec.at(j).offset_sequence.at(k).start.X()
@@ -85,7 +85,7 @@ void gcode::generate(gcode_setup gc){
                         }
                         // [G3] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
                         if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::arc && contourvec.at(j).offset_sequence.at(k).bulge>0){
-                            myfile<<"G3 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
+                            myfile<<new_line_nr(pr)<<"G3 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
                                  <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
                                 <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
                                <<" I"<<contourvec.at(j).offset_sequence.at(k).center.X()-contourvec.at(j).offset_sequence.at(k).start.X()
@@ -95,17 +95,23 @@ void gcode::generate(gcode_setup gc){
                         }
                     }
                 }
+
+                // Generate contour gcode when lead_in is not at the begin of contour.
+                if(lead_in_pos!=0){ // Lead-in position is not at begin of contour. Create a routine to start at a certain sequence nr.
+                    std::cout<<"Gcode.cpp function, this function has yet to be made."<<std::endl;
+                }
+
                 // Contour lead-out
                 pntvec=get_lead_out_points(j);
-                myfile<<"G1 X"<<pntvec.front().X()<<" Y"<<pntvec.front().Y()<<"\n";
-                myfile<<"M5"<<"\n";
-                myfile<<"G0 Z"<<gc.travelheight<<"\n";
+                myfile<<new_line_nr(pr)<<"G1 X"<<pntvec.front().X()<<" Y"<<pntvec.front().Y()<<"\n";
+                myfile<<new_line_nr(pr)<<"M5"<<"\n";
+                myfile<<new_line_nr(pr)<<"G0 Z"<<gc.travelheight<<"\n";
             }
         }
     }
 
     for(unsigned int i=0; i<gc.outtro.size(); i++){
-        myfile<<line_nr<<gc.outtro.at(i);
+        myfile<<new_line_nr(pr)<<line_nr<<gc.outtro.at(i);
     }
     myfile.close();
 }
