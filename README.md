@@ -9,3 +9,13 @@ This example show's how to use the dxfrw library and display the dxf content wit
 
 Depends : Qt + opencascade library
 
+Currently implemented:
+
+- Dxf read
+- Opencascade cad view
+- Contour offsets cw, ccw.
+- Depth sequence, cut sequence. (thermal distortion algoritme).
+- Lead-in, lead-out
+- Gcode output
+
+
