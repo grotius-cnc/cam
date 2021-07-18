@@ -35,7 +35,7 @@ enum offset_action{
     lead_out_contour=3,
 };
 
-struct data {
+struct datas {
     Handle(AIS_Shape) ashape;
     primitive_type primitivetype;
     contour_type contourtype=contour_type::none;
@@ -46,20 +46,26 @@ struct data {
     double bulge=0; // For arc's to define if the arc is [cw] or [ccw]. bulge<0=g2
     bool select=0; // Helper for contour algoritme.
 };
-extern std::vector<data> datavec;
+extern std::vector<datas> datavec;
 
 struct lead_in_out {
-    Handle(AIS_Shape) ashape; // The lead-in, lead-out shape (line, arc, etc).
-    std::vector<gp_Pnt> points; // Choose one of the parallel Points to draw the lead-in, lead-out.
+    //! The lead-in, lead-out shape (line, arc, etc).
+    Handle(AIS_Shape) ashape;
+    //! Choose one of the parallel Points to draw the lead-in, lead-out.
+    std::vector<gp_Pnt> points;
 };
 
 struct contour {
-    std::vector<data> primitive_sequence;
+    std::vector<datas> primitive_sequence;
     contour_dir dir;
     double area=0;
 
+    //! Lead_base=base points circumfence contour, Lead_in=circumfence points at lead_in offset, Lead_out=circumfence points at lead_out offset.
     lead_in_out lead_in, lead_out, lead_base;
-    std::vector<data> offset_sequence; // Primitives in cw order.
+    //! Current lead_base point position. If the lead_in-out is shifted to another position, this value stores the current lead_in-out index position.
+    // unsigned int lead_index=0;
+
+    std::vector<datas> offset_sequence; // Primitives in cw order.
 
     // Contour depth.
     std::vector<unsigned int> childcontours;
@@ -72,7 +78,7 @@ struct gcode_setup{
     std::string filename="gcode.ngc";
     std::string linenumber_format="N";
     bool print_linenumbers=true;
-    double lead_in=5;
+    double lead_in=3;
     double lead_out=1;
     double offset=2;
     double travelheight=10;
@@ -85,6 +91,7 @@ struct gcode_setup{
     std::vector<std::string> intro;
     std::vector<std::string> outtro;
 };
+extern gcode_setup gc;
 
 class variable
 {

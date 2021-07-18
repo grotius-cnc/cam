@@ -5,7 +5,7 @@ gcode::gcode()
 
 }
 
-void gcode::generate(gcode_setup gc){
+void gcode::generate(){
 
     linenumber=0;
     linenumber_format=gc.linenumber_format;
@@ -51,19 +51,7 @@ void gcode::generate(gcode_setup gc){
                 myfile<<new_line_nr(pr)<<"G1 Z"<<gc.cutheight<<" F"<<gc.piercespeed<<"\n";
                 myfile<<new_line_nr(pr)<<"G1 X"<<pntvec.back().X()<<" Y"<<pntvec.back().Y()<<" F"<<gc.feedrate<<"\n";
 
-                // Find the contourpoint that is at the lead-in position.
-                // Rotate the primitive vector if not.
-                int lead_in_pos=0;
-                for(unsigned int k=0; k<contourvec.at(j).offset_sequence.size(); k++){
-                    if(contourvec.at(j).offset_sequence.at(k).start.X()==pntvec.back().X() && contourvec.at(j).offset_sequence.at(k).start.Y()==pntvec.back().Y()){
-                        // std::cout<<"offset sequence start found at sequence: "<<k<<std::endl;
-                        lead_in_pos=k;
-                        break;
-                    }
-                }
-
                 // Generate contour gcode
-                if(lead_in_pos==0){ // Lead-in position is at begin of contour. The lead-in position is not moved to another position at the contour.
                     for(unsigned int k=0; k<contourvec.at(j).offset_sequence.size(); k++){
                         // [G1]
                         if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::line){
@@ -94,12 +82,6 @@ void gcode::generate(gcode_setup gc){
                             <<"\n";
                         }
                     }
-                }
-
-                // Generate contour gcode when lead_in is not at the begin of contour.
-                if(lead_in_pos!=0){ // Lead-in position is not at begin of contour. Create a routine to start at a certain sequence nr.
-                    std::cout<<"Gcode.cpp function, this function has yet to be made."<<std::endl;
-                }
 
                 // Contour lead-out
                 pntvec=get_lead_out_points(j);

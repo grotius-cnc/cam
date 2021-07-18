@@ -212,7 +212,7 @@ void contours::swap_contour(unsigned int i /*contourvec.at(i)*/){
 
 void contours::init_primitives(){
 
-    std::vector<data>::iterator it;
+    std::vector<datas>::iterator it;
     for(it=datavec.begin(); it<datavec.end(); it++){
         it->select=false;
     }

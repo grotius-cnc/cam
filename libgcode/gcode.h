@@ -14,7 +14,7 @@ class gcode
 {
 public:
     gcode();
-    void generate(gcode_setup gc); // Will produce a gcode file in the program build directory with a .ngc extension.
+    void generate(); // Will produce a gcode file in the program build directory with a .ngc extension.
 
     //! Helper functions:
     int get_max_depth();

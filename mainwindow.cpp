@@ -10,12 +10,17 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     // https://www.youtube.com/watch?v=2VIGb31iwds
 
+    ui->stackedWidget->setCurrentIndex(0);
+
     OpencascadeWidget = new Opencascade(this);
     ui->gridLayout_opencascade->addWidget(OpencascadeWidget);
 
     QTimer *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &MainWindow::Update_Opencascade);
     timer->start(200);
+
+    QObject::connect(ui->toolButton_edit_lead_in_out, SIGNAL(pressed()),SLOT(rotate_lead_in_out()));
+    QObject::connect(ui->toolButton_generate_contours, SIGNAL(pressed()),SLOT(generate_contours()));
 }
 
 MainWindow::~MainWindow()
@@ -30,7 +35,7 @@ void MainWindow::Update_Opencascade()
 
 bool MainWindow::open_dxf_file(std::string filename){
 
-    OpencascadeWidget->erase_all();
+    // OpencascadeWidget->erase_all();
     contourvec.clear();
     datavec.clear();
     dx_iface().clear(&fData);           // Clear previous loaded dxf data.
@@ -43,6 +48,7 @@ bool MainWindow::open_dxf_file(std::string filename){
 
         // Process opencascade primitives.
         load_opencascade_primitives();
+        OpencascadeWidget->zoom_all();
     }
     return ok;
 }
@@ -82,7 +88,7 @@ void MainWindow::load_opencascade_primitives(){
             Handle(AIS_Shape) ashape=draw_primitives().draw_3d_point({point->basePoint.x,point->basePoint.y,point->basePoint.z});
             ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(point->color),1);
 
-            struct data d;
+            datas d;
             d.ashape=ashape;
             d.primitivetype=primitive_type::point;
             d.start={point->basePoint.x,point->basePoint.y,point->basePoint.z};
@@ -96,7 +102,7 @@ void MainWindow::load_opencascade_primitives(){
             Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({line->basePoint.x, line->basePoint.y, line->basePoint.z},{line->secPoint.x, line->secPoint.y, line->secPoint.z});
             ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(line->color),1);
 
-            struct data d;
+            datas d;
             d.ashape=ashape;
             d.primitivetype=primitive_type::line;
             d.start={line->basePoint.x, line->basePoint.y, line->basePoint.z};
@@ -145,7 +151,7 @@ void MainWindow::load_opencascade_primitives(){
             area=area/2; // Area / 2.
             // std::cout<<"lwpolyline cw area : "<<area<<std::endl; // https://www.youtube.com/watch?v=HG7I4oniOyA
 
-            struct data d;
+            datas d;
             d.ashape=ashape;
             d.primitivetype=primitive_type::lwpolyline;
 
@@ -171,7 +177,7 @@ void MainWindow::load_opencascade_primitives(){
             //std::cout<<"spline fitlist.size:"<<spline->fitlist.size()<<std::endl;
             //std::cout<<"spline controllist.size:"<<spline->controllist.size()<<std::endl;
 
-            struct data d;
+            datas d;
             d.ashape=ashape;
             d.primitivetype=primitive_type::spline;
             d.start={spline->controllist.front()->x,spline->controllist.front()->y,spline->controllist.front()->z};
@@ -190,7 +196,7 @@ void MainWindow::load_opencascade_primitives(){
                                                                         arc->startAngle(),arc->endAngle());
             ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(arc->color),1);
 
-            struct data d;
+            datas d;
             d.ashape=ashape;
             d.primitivetype=primitive_type::arc;
             d.radius=arc->radious;
@@ -230,7 +236,7 @@ void MainWindow::load_opencascade_primitives(){
             Handle(AIS_Shape) ashape=draw_primitives().draw_2d_circle({circle->basePoint.x,circle->basePoint.y,circle->basePoint.z},circle->radious);
             ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(circle->color),1);
 
-            struct data d;
+            datas d;
             d.ashape=ashape;
             d.primitivetype=primitive_type::circle;
             d.radius=circle->radious;
@@ -266,7 +272,7 @@ void MainWindow::load_opencascade_primitives(){
             // std::cout<<"ellipse secpoint x:"<<ellipse->secPoint.x<<" y:"<<ellipse->secPoint.y<<" z:"<<ellipse->secPoint.z<<std::endl;
             // std::cout<<"ellipse extpoint x:"<<ellipse->extPoint.x<<" y:"<<ellipse->extPoint.y<<" z:"<<ellipse->extPoint.z<<std::endl;
 
-            struct data d;
+            datas d;
             d.ashape=ashape;
             d.primitivetype=primitive_type::ellipse;
 
@@ -295,26 +301,37 @@ void MainWindow::load_opencascade_primitives(){
         }
     }
 
+    for(unsigned int i=0; i<datavec.size(); i++){
+        OpencascadeWidget->show_shape(datavec.at(i).ashape);  // Primairy dxf data.
+    }
 
+    // When dxf is loaded, calculate contours.
+    generate_contours();
+}
 
-    // At this stage we can create contours from the individual primitives.
-    // We do this in the contours class.
-    contours().main(0.1); // Finding contourpoints hit tollerance in mm.
+//! Move the lead_in-out to next position of the contourvec.at[i]. We simply rotote the primitive sequence vector +1.
+//! Then we perform a new contour offset and reload the opencascade view. The gcode output .ngc file is updated.
+void MainWindow::rotate_lead_in_out(){
 
-    // First parameter offset, + or -. Second parameter lead-in, lead-out distance, keep value positive.
-    double offset=2;
-    double lead_in=2;
-    double lead_out=2;
+    OpencascadeWidget->erase_all();
+    unsigned int i=OpencascadeWidget->selected_contour;
 
-    offsets().do_offset(offset,offset_action::offset_contour,lead_in,lead_out);
+    double offset=gc.offset;                                                                    // Gc = gcode setup.
+    double lead_in=gc.lead_in;
+    double lead_out=gc.lead_out;
+
+    for(unsigned int i=0; i<contourvec.size(); i++){                                            // Remove all offsets.
+        contourvec.at(i).offset_sequence.clear();
+        contourvec.at(i).lead_base.points.clear();
+        contourvec.at(i).lead_in.points.clear();
+        contourvec.at(i).lead_out.points.clear();
+    }
+
+    offsets().rotate_primairy_contour(i);                                                       // Rotate selected contour +1.
+    offsets().do_offset(offset,offset_action::offset_contour,lead_in,lead_out);                 // Create new offsets.
     offsets().do_offset(offset,offset_action::lead_base_contour,lead_in,lead_out);
     offsets().do_offset(offset,offset_action::lead_in_contour,lead_in,lead_out);
     offsets().do_offset(offset,offset_action::lead_out_contour,lead_in,lead_out);
-
-    // Show shapes from datavec
-    // for(unsigned int i=0; i<datavec.size(); i++){
-    //    OpencascadeWidget->show_shape(datavec.at(i).ashape);
-    //}
 
     for(unsigned int i=0; i<contourvec.size(); i++){
         for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){               // Primairy dxf data.
@@ -330,11 +347,109 @@ void MainWindow::load_opencascade_primitives(){
         OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);
     }
 
-    gcode_setup gc;
-    gcode().generate(gc);
-
-    OpencascadeWidget->zoom_all(); // Zoom to extends. Top view is already set when initializing the opencascadewidget at startup.
+    gcode_get_user_settings();
+    gcode().generate();                                                                         // Generate gcode.
+    // Update the mainwindow gcode preview:
+    gcode_preview();
 }
+
+void MainWindow::generate_contours(){
+
+    OpencascadeWidget->erase_all();
+    for(unsigned int i=0; i<contourvec.size(); i++){                                            // Remove all previous offsets.
+        contourvec.at(i).offset_sequence.clear();
+        contourvec.at(i).lead_base.points.clear();
+        contourvec.at(i).lead_in.points.clear();
+        contourvec.at(i).lead_out.points.clear();
+    }
+
+    // At this stage we can create contours from the individual primitives.
+    // We do this in the contours class.
+    contours().main(0.1); // Finding contourpoints hit tollerance in mm.
+
+    // First parameter offset, + or -. Second parameter lead-in, lead-out distance, keep value positive.
+    // Gc is gcode setup.
+    double offset=gc.offset;
+    double lead_in=gc.lead_in;
+    double lead_out=gc.lead_out;
+
+    offsets().do_offset(offset,offset_action::offset_contour,lead_in,lead_out);
+    offsets().do_offset(offset,offset_action::lead_base_contour,lead_in,lead_out);
+    offsets().do_offset(offset,offset_action::lead_in_contour,lead_in,lead_out);
+    offsets().do_offset(offset,offset_action::lead_out_contour,lead_in,lead_out);
+
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){               // Primairy dxf data.
+            OpencascadeWidget->show_shape(contourvec.at(i).primitive_sequence.at(j).ashape);
+        }
+        for(unsigned int j=0; j<contourvec.at(i).offset_sequence.size(); j++){                  // Offset contour data.
+            OpencascadeWidget->show_shape(contourvec.at(i).offset_sequence.at(j).ashape);
+        }
+    }
+
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);                         // Show lead-in, lead-out shapes.
+        OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);
+    }
+
+    gcode_get_user_settings();
+    gcode().generate();
+    // Update the mainwindow gcode preview:
+    gcode_preview();
+}
+
+void MainWindow::gcode_get_user_settings(){
+
+    gc.linenumber_format=ui->lineEdit_gcode_linenumber_format->text().toStdString();
+    gc.print_linenumbers=ui->radioButton_use_line_numbers->isChecked();
+    gc.feedrate=ui->lineEdit_gcode_feedrate->text().toDouble();
+    gc.power=ui->lineEdit_gcode_power->text().toDouble();
+    gc.lead_in=ui->lineEdit_lead_in->text().toDouble();
+    gc.lead_out=ui->lineEdit_lead_out->text().toDouble();
+    gc.travelheight=ui->lineEdit_travel_height->text().toDouble();
+    gc.pierceheight=ui->lineEdit_plunge_height->text().toDouble();
+    gc.piercespeed=ui->lineEdit_plunge_speed->text().toDouble();
+
+
+    // Intro
+    QString plainTextEditContents = ui->plainTextEdit_intro->toPlainText();
+    QStringList lines = plainTextEditContents.split("\n");
+    gc.intro.clear();
+    for(int i=0; i<lines.size(); i++){
+        std::string str=lines.at(i).toStdString();
+        str+="\n";
+        gc.intro.push_back(str);
+    }
+    // Outtro
+    gc.outtro.clear();
+    plainTextEditContents = ui->plainTextEdit_outtro->toPlainText();
+    lines = plainTextEditContents.split("\n");
+    for(int i=0; i<lines.size(); i++){
+        std::string str=lines.at(i).toStdString();
+        str+="\n";
+        gc.outtro.push_back(str);
+    }
+}
+
+void MainWindow::gcode_preview()
+{
+    std::string line,lines;
+    std::ifstream myfile ("gcode.ngc");
+    if (myfile.is_open())
+    {
+      while ( getline (myfile,line) )
+      {
+         lines+=line;
+         lines+="\n";
+      }
+      myfile.close();
+    }
+    else std::cout << "Unable to open file";
+
+    ui->plainTextEdit_gcode->setPlainText(QString::fromStdString(lines));
+}
+
+
 
 void MainWindow::on_toolButton_view_top_pressed()
 {
@@ -348,8 +463,6 @@ void MainWindow::on_toolButton_open_dxf_pressed(){
 
     std::string filename=ui->lineEdit_dxf_filename->text().toStdString();
     open_dxf_file(filename);    // Read the dxf, for now it's directly displayed by opencascade.
-
-    OpencascadeWidget->zoom_all();
 }
 
 void MainWindow::on_toolButton_save_dxf_pressed()
@@ -361,11 +474,6 @@ void MainWindow::on_toolButton_save_dxf_pressed()
 void MainWindow::on_toolButton_add_line_pressed()
 {
     write_entity();
-}
-
-void MainWindow::on_toolButton_calculate_contours_pressed()
-{
-
 }
 
 void MainWindow::on_toolButton_stacket_page_plus_pressed()
@@ -381,11 +489,6 @@ void MainWindow::on_toolButton_stacket_page_plus_pressed()
     //}
 }
 
-void MainWindow::on_spinBox_valueChanged(int arg1)
-{
-    // p = point on contourpath.
-
-}
 
 
 

@@ -25,6 +25,11 @@ using namespace occ;
 #include <QMainWindow>
 #include <QTimer>
 
+// File read operations.
+#include <iostream>
+#include <fstream>
+#include <string>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -45,7 +50,13 @@ public:
     void Update_Opencascade();
     void load_opencascade_primitives();
 
+    void gcode_preview();
+    void gcode_get_user_settings();
+
 private slots:
+    void rotate_lead_in_out();
+    void generate_contours();
+
     void on_toolButton_open_dxf_pressed();
 
     void on_toolButton_save_dxf_pressed();
@@ -54,11 +65,8 @@ private slots:
 
     void on_toolButton_add_line_pressed();
 
-    void on_toolButton_calculate_contours_pressed();
-
     void on_toolButton_stacket_page_plus_pressed();
 
-    void on_spinBox_valueChanged(int arg1);
 
 private:
     Ui::MainWindow *ui;
@@ -68,6 +76,5 @@ private:
     dx_data fCleanData; // To clean the fData.
     dx_iface *iface = new dx_iface;
     Opencascade* OpencascadeWidget;
-
 };
 #endif // MAINWINDOW_H
