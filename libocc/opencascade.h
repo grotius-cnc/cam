@@ -59,7 +59,9 @@ public:
     void Init_robot();
     void setup_tcp_origin();
 
-    void show_shape(Handle(AIS_Shape) shape);
+    void show_shape(Handle(AIS_Shape) ashape);
+    void set_shape_selected(Handle(AIS_Shape) ashape);
+    void clear_selection();
     void Redraw();
     void update_jointpos(double j0, double j1, double j2, double j3, double j4, double j5);
 
@@ -121,19 +123,8 @@ private:
 
     Handle(AIS_Shape) aisBody_tcp_xaxis, aisBody_tcp_yaxis, aisBody_tcp_zaxis;
 
-    // Create the euler lines
-    double toollenght=105;
-    double linelenght=25;
-    double coneheight=25;
-    double conetopdiameter=1;
-    double conebottomdiameter=5;
-    double textheight=25;
-
-
-    TopoDS_Edge edge_linepreview;
-    Handle(AIS_Shape) aisBody_linepreview;
-
-    bool select=false;
+public:
+    unsigned int selected_contour=0;
 
 signals:
 

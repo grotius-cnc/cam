@@ -102,11 +102,6 @@
 
 using namespace occ;
 
-//strore the data from the stepfile.
-
-//std::vector<data> datavec, camvec;
-//std::vector<contour> contourvec;
-
 SEGMENT Segment;
 std::vector<SEGMENT> SegmentVec;
 
@@ -369,13 +364,21 @@ void Opencascade::update_jointpos(double j0, double j1, double j2, double j3, do
     }
 }
 
-void Opencascade::show_shape(Handle(AIS_Shape) shape){
-    m_context->Display(shape,Standard_False);
+void Opencascade::show_shape(Handle(AIS_Shape) ashape){
+    m_context->Display(ashape,Standard_False);
+}
+
+void Opencascade::set_shape_selected(Handle(AIS_Shape) ashape){
+    m_context->AddOrRemoveSelected(ashape,1); // Select the contour, hightlight it.
+}
+
+void Opencascade::clear_selection(){
+    m_context->ClearSelected(1);
 }
 
 void Opencascade::get_selections(){ // Updated by jointpos function from mainwindow.
 
-    unsigned int selected_contour=0; bool select=0; int temp=0;
+    bool select=0; int temp=0;
     for(m_context->InitSelected(); m_context->MoreSelected(); m_context->NextSelected()){
         for(unsigned int i=0; i<contourvec.size(); i++){
             for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){
