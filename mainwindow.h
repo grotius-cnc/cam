@@ -30,6 +30,13 @@ using namespace occ;
 #include <fstream>
 #include <string>
 
+// Dialog file open library, https://github.com/samhocevar/portable-file-dialogs/blob/master/examples/example.cpp
+#include <portable-file-dialogs.h>
+#if _WIN32
+#define DEFAULT_PATH "C:\\"
+#else
+#define DEFAULT_PATH "/tmp"
+#endif
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -58,12 +65,6 @@ private slots:
     void generate_contours();
 
     void on_toolButton_open_dxf_pressed();
-
-    void on_toolButton_save_dxf_pressed();
-
-    void on_toolButton_view_top_pressed();
-
-    void on_toolButton_add_line_pressed();
 
     void on_toolButton_stacket_page_plus_pressed();
 

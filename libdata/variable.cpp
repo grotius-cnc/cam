@@ -1,6 +1,6 @@
 #include "variable.h"
 
-std::vector<datas> datavec;
+std::vector<datas> datavec, dxfvec;
 std::vector<contour> contourvec;
 gcode_setup gc;
 

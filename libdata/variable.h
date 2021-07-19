@@ -39,6 +39,7 @@ struct datas {
     Handle(AIS_Shape) ashape;
     primitive_type primitivetype;
     contour_type contourtype=contour_type::none;
+    std::string acad_layer;
     //! Startpoint, endpoint
     gp_Pnt start{0,0,0}, end{0,0,0}, center{0,0,0}; // Center is used by cavalier functions.
     std::vector<gp_Pnt> control, arcmid; // Arcmid is used by cavalier function and is the point at half way arc circumfence.
@@ -46,7 +47,8 @@ struct datas {
     double bulge=0; // For arc's to define if the arc is [cw] or [ccw]. bulge<0=g2
     bool select=0; // Helper for contour algoritme.
 };
-extern std::vector<datas> datavec;
+//! Datavec contains the filtered cad_layers to cut, dxfvec is the complete dxf data.
+extern std::vector<datas> datavec, dxfvec;
 
 struct lead_in_out {
     //! The lead-in, lead-out shape (line, arc, etc).
@@ -77,6 +79,7 @@ extern std::vector<contour> contourvec;
 struct gcode_setup{
     std::string filename="gcode.ngc";
     std::string linenumber_format="N";
+
     bool print_linenumbers=true;
     double lead_in=3;
     double lead_out=1;
@@ -88,6 +91,7 @@ struct gcode_setup{
     double power=45;
     double feedrate=1400;
 
+    std::string layer;
     std::vector<std::string> intro;
     std::vector<std::string> outtro;
 };

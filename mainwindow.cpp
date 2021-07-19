@@ -93,7 +93,8 @@ void MainWindow::load_opencascade_primitives(){
             d.primitivetype=primitive_type::point;
             d.start={point->basePoint.x,point->basePoint.y,point->basePoint.z};
             d.end={point->basePoint.x,point->basePoint.y,point->basePoint.z};
-            datavec.push_back(d);
+            d.acad_layer=point->layer;
+            dxfvec.push_back(d);
         }
 
         if(DRW::LINE == (*iter)->eType){
@@ -110,7 +111,8 @@ void MainWindow::load_opencascade_primitives(){
             d.control.push_back({(line->basePoint.x+line->secPoint.x)/2, (line->basePoint.y+line->secPoint.y)/2,(line->basePoint.z+line->secPoint.z)/2});
             // std::cout<<"controlpoint line x:"<<d.control.back().X()<<" y:"<<d.control.back().Y()<<" z:"<<d.control.back().Z()<<std::endl;
             d.end={line->secPoint.x, line->secPoint.y, line->secPoint.z};
-            datavec.push_back(d);
+            d.acad_layer=line->layer;
+            dxfvec.push_back(d);
         }
 
         // Lwpolyline is saved as clockwise [cw]
@@ -160,7 +162,8 @@ void MainWindow::load_opencascade_primitives(){
                 d.control.push_back({pntvec.at(i).X(),pntvec.at(i).Y(),0});         // std::cout<<"lwpolyline points x: "<<pntvec.at(i).X()<<" y:"<<pntvec.at(i).Y()<<" no z"<<std::endl;
             }
             d.end={pntvec.back().X(),pntvec.back().Y(),0};                          // std::cout<<"lwpolyline points x: "<<d.end.X()<<" y:"<<d.end.Y()<<" no z"<<std::endl;
-            datavec.push_back(d);
+            d.acad_layer=lwpolyline->layer;
+            dxfvec.push_back(d);
         }
 
         // The spline has no direction just as the line.
@@ -185,7 +188,8 @@ void MainWindow::load_opencascade_primitives(){
                 d.control.push_back({spline->controllist.at(i)->x,spline->controllist.at(i)->y,spline->controllist.at(i)->z});
             }
             d.end={spline->controllist.back()->x,spline->controllist.back()->y,spline->controllist.back()->z};
-            datavec.push_back(d);
+            d.acad_layer=spline->layer;
+            dxfvec.push_back(d);
         }
 
         // Arc's are saved as clockwise [cw] by draw_primivite->get points funtion !
@@ -225,8 +229,8 @@ void MainWindow::load_opencascade_primitives(){
             for(unsigned int i=0; i<d.control.size(); i++){
                 //std::cout<<"arc controlpoints x:"<<d.control.at(i).X()<<" y:"<<d.control.at(i).Y()<<" z:"<<d.control.at(i).Z()<<std::endl;
             }
-
-            datavec.push_back(d);
+            d.acad_layer=arc->layer;
+            dxfvec.push_back(d);
         }
 
         // Circles are saved clockwise [cw], startpoint is right side of circle.
@@ -252,8 +256,8 @@ void MainWindow::load_opencascade_primitives(){
 
             d.control.pop_back();
             d.control.erase(d.control.begin());
-
-            datavec.push_back(d);
+            d.acad_layer=circle->layer;
+            dxfvec.push_back(d);
         }
 
         // Ellipses are saved clockwise [cw], startpoint is secpoint.
@@ -289,8 +293,8 @@ void MainWindow::load_opencascade_primitives(){
 
             d.control.pop_back();
             d.control.erase(d.control.begin());
-
-            datavec.push_back(d);
+            d.acad_layer=ellipse->layer;
+            dxfvec.push_back(d);
 
             // Acad's ellipse nr's, https://github.com/grotius-cnc/cadcam/blob/master/dxf/read_ellipse_AC1027.cpp
             // x,y,z centerpoint    10,20,30
@@ -301,12 +305,28 @@ void MainWindow::load_opencascade_primitives(){
         }
     }
 
-    for(unsigned int i=0; i<datavec.size(); i++){
-        OpencascadeWidget->show_shape(datavec.at(i).ashape);  // Primairy dxf data.
+
+    std::vector<std::string>layervec;
+    for(unsigned int i=0; i<dxfvec.size(); i++){
+        // Preview primairy dxf data.
+        OpencascadeWidget->show_shape(dxfvec.at(i).ashape);
+        // List cad_layers.
+        std::string layer=dxfvec.at(i).acad_layer;
+        // No duplicates
+        if(std::find(layervec.begin(), layervec.end(),layer)!=layervec.end()){
+            //do nothing
+        } else {
+            layervec.push_back(layer);
+        }
+    }
+
+    // Populate the layer combobox.
+    for(unsigned int i=0; i<layervec.size(); i++){
+        ui->comboBox_layer->addItem(QString::fromStdString(layervec.at(i)));
     }
 
     // When dxf is loaded, calculate contours.
-    generate_contours();
+    // generate_contours();
 }
 
 //! Move the lead_in-out to next position of the contourvec.at[i]. We simply rotote the primitive sequence vector +1.
@@ -316,10 +336,6 @@ void MainWindow::rotate_lead_in_out(){
     OpencascadeWidget->erase_all();
     unsigned int i=OpencascadeWidget->selected_contour;
 
-    double offset=gc.offset;                                                                    // Gc = gcode setup.
-    double lead_in=gc.lead_in;
-    double lead_out=gc.lead_out;
-
     for(unsigned int i=0; i<contourvec.size(); i++){                                            // Remove all offsets.
         contourvec.at(i).offset_sequence.clear();
         contourvec.at(i).lead_base.points.clear();
@@ -327,16 +343,22 @@ void MainWindow::rotate_lead_in_out(){
         contourvec.at(i).lead_out.points.clear();
     }
 
+    gcode_get_user_settings();
+    double offset=gc.offset;                                                                    // Gc = gcode setup.
+    double lead_in=gc.lead_in;
+    double lead_out=gc.lead_out;
+
     offsets().rotate_primairy_contour(i);                                                       // Rotate selected contour +1.
     offsets().do_offset(offset,offset_action::offset_contour,lead_in,lead_out);                 // Create new offsets.
     offsets().do_offset(offset,offset_action::lead_base_contour,lead_in,lead_out);
     offsets().do_offset(offset,offset_action::lead_in_contour,lead_in,lead_out);
     offsets().do_offset(offset,offset_action::lead_out_contour,lead_in,lead_out);
 
+    for(unsigned int i=0; i<dxfvec.size(); i++){
+        OpencascadeWidget->show_shape(dxfvec.at(i).ashape);                                     // Dxf drawing preview.
+    }
+
     for(unsigned int i=0; i<contourvec.size(); i++){
-        for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){               // Primairy dxf data.
-            OpencascadeWidget->show_shape(contourvec.at(i).primitive_sequence.at(j).ashape);
-        }
         for(unsigned int j=0; j<contourvec.at(i).offset_sequence.size(); j++){                  // Offset contour data.
             OpencascadeWidget->show_shape(contourvec.at(i).offset_sequence.at(j).ashape);
         }
@@ -346,8 +368,8 @@ void MainWindow::rotate_lead_in_out(){
         OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);                         // Show lead-in, lead-out shapes.
         OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);
     }
+    OpencascadeWidget->show_3d_interactive_box();
 
-    gcode_get_user_settings();
     gcode().generate();                                                                         // Generate gcode.
     // Update the mainwindow gcode preview:
     gcode_preview();
@@ -365,7 +387,8 @@ void MainWindow::generate_contours(){
 
     // At this stage we can create contours from the individual primitives.
     // We do this in the contours class.
-    contours().main(0.1); // Finding contourpoints hit tollerance in mm.
+    gcode_get_user_settings();
+    contours().main(0.1, gc.layer); // Finding contourpoints hit tollerance in mm.
 
     // First parameter offset, + or -. Second parameter lead-in, lead-out distance, keep value positive.
     // Gc is gcode setup.
@@ -378,10 +401,11 @@ void MainWindow::generate_contours(){
     offsets().do_offset(offset,offset_action::lead_in_contour,lead_in,lead_out);
     offsets().do_offset(offset,offset_action::lead_out_contour,lead_in,lead_out);
 
+    for(unsigned int i=0; i<dxfvec.size(); i++){
+        OpencascadeWidget->show_shape(dxfvec.at(i).ashape);                                     // Dxf drawing preview.
+    }
+
     for(unsigned int i=0; i<contourvec.size(); i++){
-        for(unsigned int j=0; j<contourvec.at(i).primitive_sequence.size(); j++){               // Primairy dxf data.
-            OpencascadeWidget->show_shape(contourvec.at(i).primitive_sequence.at(j).ashape);
-        }
         for(unsigned int j=0; j<contourvec.at(i).offset_sequence.size(); j++){                  // Offset contour data.
             OpencascadeWidget->show_shape(contourvec.at(i).offset_sequence.at(j).ashape);
         }
@@ -391,11 +415,10 @@ void MainWindow::generate_contours(){
         OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);                         // Show lead-in, lead-out shapes.
         OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);
     }
+    OpencascadeWidget->show_3d_interactive_box();
 
-    gcode_get_user_settings();
     gcode().generate();
-    // Update the mainwindow gcode preview:
-    gcode_preview();
+    gcode_preview();    // Update the mainwindow gcode preview:
 }
 
 void MainWindow::gcode_get_user_settings(){
@@ -409,7 +432,8 @@ void MainWindow::gcode_get_user_settings(){
     gc.travelheight=ui->lineEdit_travel_height->text().toDouble();
     gc.pierceheight=ui->lineEdit_plunge_height->text().toDouble();
     gc.piercespeed=ui->lineEdit_plunge_speed->text().toDouble();
-
+    gc.offset=ui->lineEdit_offset->text().toDouble();
+    gc.layer=ui->comboBox_layer->currentText().toStdString();
 
     // Intro
     QString plainTextEditContents = ui->plainTextEdit_intro->toPlainText();
@@ -437,56 +461,49 @@ void MainWindow::gcode_preview()
     std::ifstream myfile ("gcode.ngc");
     if (myfile.is_open())
     {
-      while ( getline (myfile,line) )
-      {
-         lines+=line;
-         lines+="\n";
-      }
-      myfile.close();
+        while ( getline (myfile,line) )
+        {
+            lines+=line;
+            lines+="\n";
+        }
+        myfile.close();
     }
     else std::cout << "Unable to open file";
 
     ui->plainTextEdit_gcode->setPlainText(QString::fromStdString(lines));
 }
 
-
-
-void MainWindow::on_toolButton_view_top_pressed()
-{
-    OpencascadeWidget->set_orthographic();
-    OpencascadeWidget->set_view_top();
-}
-
 void MainWindow::on_toolButton_open_dxf_pressed(){
-    OpencascadeWidget->set_orthographic();
-    OpencascadeWidget->set_view_top();
-
-    std::string filename=ui->lineEdit_dxf_filename->text().toStdString();
-    open_dxf_file(filename);    // Read the dxf, for now it's directly displayed by opencascade.
+    if (!pfd::settings::available()){
+        std::cout << "Portable File Dialogs are not available on this platform. \n"
+                     "On linux install zenity, $ sudo apt-get install zenity\n";
+    }
+    auto f = pfd::open_file("Choose files to read", DEFAULT_PATH,
+                            { "Dxf Files (.dxf)", "*.dxf",
+                              "All Files", "*" }, pfd::opt::none); // Or ::multiselect.
+    open_dxf_file(f.result().at(0)); // This lib can open multiple results.
 }
 
-void MainWindow::on_toolButton_save_dxf_pressed()
-{
-    std::string filename=ui->lineEdit_dxf_filename->text().toStdString();
-    save_dxf_file(filename);
-}
+//void MainWindow::on_toolButton_save_dxf_pressed()
+//{
+//    std::string filename=ui->lineEdit_dxf_filename->text().toStdString();
+//    save_dxf_file(filename);
+//}
 
-void MainWindow::on_toolButton_add_line_pressed()
-{
-    write_entity();
-}
+//void MainWindow::on_toolButton_add_line_pressed()
+//{
+//    write_entity();
+//}
 
 void MainWindow::on_toolButton_stacket_page_plus_pressed()
 {
     if(ui->stackedWidget->currentIndex() != ui->stackedWidget->count()-1){
         ui->stackedWidget->setCurrentIndex(ui->stackedWidget->currentIndex()+1);
     } else {
-        //if(ui->stackedWidget->currentIndex() == ui->stackedWidget->count()-1){
+
         ui->stackedWidget->setCurrentIndex(0);
     }
-
-    std::cout<<"curindex:"<<ui->stackedWidget->currentIndex()<<std::endl;
-    //}
+    // std::cout<<"curindex:"<<ui->stackedWidget->currentIndex()<<std::endl;
 }
 
 

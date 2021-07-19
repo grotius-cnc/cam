@@ -569,27 +569,7 @@ void Opencascade::m_initialize_context()
         m_viewer->SetDefaultLights();
         m_viewer->SetLightOn();
 
-        /// This is the interactivve 3d box
-        //  View : top, bottom, side, 3d, etc.
-
-        opencascade::handle<AIS_ViewCube> aisViewCube = new AIS_ViewCube;
-        aisViewCube->SetBoxColor(Quantity_NOC_GRAY75);
-        //aisViewCube->SetFixedAnimationLoop(false);
-        aisViewCube->SetDrawAxes(false);
-        aisViewCube->SetSize(55);
-        aisViewCube->SetFontHeight(12);
-        aisViewCube->SetTransformPersistence(
-                    new Graphic3d_TransformPers(
-                        Graphic3d_TMF_TriedronPers,
-                        Aspect_TOTP_LEFT_UPPER,
-                        Graphic3d_Vec2i(85, 85)));
-        m_context->Display(aisViewCube, false);
-        //aisViewCube->Attributes()->DatumAspect()->LineAspect(Prs3d_DP_XAxis)->SetColor(Quantity_NOC_RED2);
-        //const Handle_Prs3d_DatumAspect& datumAspect = aisViewCube->Attributes()->DatumAspect();
-        //datumAspect->ShadingAspect(Prs3d_DP_XAxis)->SetColor(Quantity_NOC_RED2);
-        //datumAspect->ShadingAspect(Prs3d_DP_YAxis)->SetColor(Quantity_NOC_GREEN2);
-        //datumAspect->ShadingAspect(Prs3d_DP_ZAxis)->SetColor(Quantity_NOC_BLUE2);
-        //m_aisViewCube = aisViewCube;
+        show_3d_interactive_box();
 
         /// Set background homogenius, one color.
         //  m_view->SetBackgroundColor(Quantity_NOC_GRAY49);
@@ -662,6 +642,28 @@ void Opencascade::m_initialize_context()
 
         m_view->MustBeResized();
     }
+}
+
+//! This is the interactivve 3d box
+void Opencascade::show_3d_interactive_box(){
+    opencascade::handle<AIS_ViewCube> aisViewCube = new AIS_ViewCube;
+    aisViewCube->SetBoxColor(Quantity_NOC_GRAY75);
+    //aisViewCube->SetFixedAnimationLoop(false);
+    aisViewCube->SetDrawAxes(false);
+    aisViewCube->SetSize(55);
+    aisViewCube->SetFontHeight(12);
+    aisViewCube->SetTransformPersistence(
+                new Graphic3d_TransformPers(
+                    Graphic3d_TMF_TriedronPers,
+                    Aspect_TOTP_LEFT_UPPER,
+                    Graphic3d_Vec2i(85, 85)));
+    m_context->Display(aisViewCube, false);
+    //aisViewCube->Attributes()->DatumAspect()->LineAspect(Prs3d_DP_XAxis)->SetColor(Quantity_NOC_RED2);
+    //const Handle_Prs3d_DatumAspect& datumAspect = aisViewCube->Attributes()->DatumAspect();
+    //datumAspect->ShadingAspect(Prs3d_DP_XAxis)->SetColor(Quantity_NOC_RED2);
+    //datumAspect->ShadingAspect(Prs3d_DP_YAxis)->SetColor(Quantity_NOC_GREEN2);
+    //datumAspect->ShadingAspect(Prs3d_DP_ZAxis)->SetColor(Quantity_NOC_BLUE2);
+    //m_aisViewCube = aisViewCube;
 }
 
 void Opencascade::paintEvent(QPaintEvent *)

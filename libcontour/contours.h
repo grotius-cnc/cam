@@ -11,11 +11,13 @@ class contours
 public:
     contours();
 
-    void main(double tol);
+    void main(double tol, std::string layer);
+
+    //! Wich layer to cut?
+    void init_primitives(std::string layer);
 
     //! Check if open contours are open or closed. For example a spline can be closed if startpoint = endpoint.
     //! tol = tollerance to classify a startpoint-endpoint match.
-    void init_primitives();
     void check_for_single_closed_contours(double tol);
     void check_for_multi_contours(double tol);
     void check_for_single_open_contours(double tol);

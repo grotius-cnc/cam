@@ -4,6 +4,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++20
 
+# This code depends on zenity.
+# sudo apt-get install zenity
+
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
@@ -44,6 +47,7 @@ HEADERS += \
     libcavalier/offsets.h \
     libcontour/contours.h \
     libdata/variable.h \
+    libdialog/portable-file-dialogs.h \
     libdxfrw/drw_base.h \
     libdxfrw/drw_classes.h \
     libdxfrw/drw_entities.h \
@@ -93,6 +97,7 @@ INCLUDEPATH+=   libdxfrw/ \
                 libcontour/ \
                 libdata/ \
                 libgcode/ \
+                libdialog/ \
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

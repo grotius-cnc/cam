@@ -58,6 +58,7 @@ public:
     void Visit(const TDF_Label& theLabel);
     void Init_robot();
     void setup_tcp_origin();
+    void show_3d_interactive_box();
 
     void show_shape(Handle(AIS_Shape) ashape);
     void set_shape_selected(Handle(AIS_Shape) ashape);

@@ -6,9 +6,9 @@ contours::contours()
 
 }
 
-void contours::main(double tol){
+void contours::main(double tol, std::string layer){
     contourvec.clear();
-    init_primitives();
+    init_primitives(layer);
     check_for_single_closed_contours(tol);
     check_for_multi_contours(tol);
     check_for_single_open_contours(tol);
@@ -210,11 +210,15 @@ void contours::swap_contour(unsigned int i /*contourvec.at(i)*/){
     std::reverse(contourvec.at(i).primitive_sequence.begin(), contourvec.at(i).primitive_sequence.end());
 }
 
-void contours::init_primitives(){
+void contours::init_primitives(std::string layer){
 
     std::vector<datas>::iterator it;
-    for(it=datavec.begin(); it<datavec.end(); it++){
+    for(it=dxfvec.begin(); it<dxfvec.end(); it++){
         it->select=false;
+        // Only copy the selected layer to the datavec.
+        if(it->acad_layer==layer){
+            datavec.push_back(*it);
+        }
     }
 }
 
