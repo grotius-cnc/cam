@@ -14,7 +14,8 @@ Currently implemented:
 
 - Dxf read.
 - Opencascade cad view, selecting contours by mouse click.
-- Contour offsets cw, ccw.
+- Contour offset selected cad layer in combobox. 
+- Supported contour offset values: -, + or 0.
 - Depth sequence, cut sequence. (thermal distortion algoritme).
 - Lead-in, lead-out.
 - Generates a gcode.ngc output file located in build directory.
