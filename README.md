@@ -1,5 +1,5 @@
-
-![joco-power](https://user-images.githubusercontent.com/44880102/125855980-06be7e1d-4694-434a-9fe6-2458c3e0da6e.jpg)
+![joco-power](https://user-images.githubusercontent.com/44880102/126195312-21ad8ad2-9934-4f9a-8ca5-feb9db597b5f.jpg)
+![joco-power1](https://user-images.githubusercontent.com/44880102/126195320-89a89308-8b0b-46ca-905c-5ea7eb64b7d5.jpg)
 
 # QT_dxfrw
 Qt project example of the dxfrw c++ library
