@@ -91,7 +91,7 @@ STANDARD
   9
 $CLAYER
   8
-pocket
+test
   9
 $CELTYPE
   6
@@ -1117,7 +1117,7 @@ AcDbViewportTableRecord
  12
 257.6483889271247
  22
-132.531365527262
+136.2385365909616
  13
 0
  23
@@ -2913,7 +2913,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+contour
   6
 ByLayer
  62
@@ -2923,13 +2923,13 @@ ByLayer
 100
 AcDbLine
  10
-40
+120
  20
-40
+0
  11
-60
+220
  21
-40
+0
   0
 LINE
   5
@@ -2937,7 +2937,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+contour
   6
 ByLayer
  62
@@ -2947,13 +2947,13 @@ ByLayer
 100
 AcDbLine
  10
-60
+220
  20
-40
+0
  11
-60
+220
  21
-60
+100
   0
 LINE
   5
@@ -2961,7 +2961,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+contour
   6
 ByLayer
  62
@@ -2971,13 +2971,13 @@ ByLayer
 100
 AcDbLine
  10
-60
+220
  20
-60
+100
  11
-40
+120
  21
-60
+100
   0
 LINE
   5
@@ -2985,7 +2985,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+contour
   6
 ByLayer
  62
@@ -2995,13 +2995,13 @@ ByLayer
 100
 AcDbLine
  10
-40
+120
  20
-60
+100
  11
-40
+120
  21
-40
+0
   0
 LINE
   5
@@ -3009,7 +3009,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+contour
   6
 ByLayer
  62
@@ -3019,13 +3019,13 @@ ByLayer
 100
 AcDbLine
  10
-110
+140
  20
-0
+20
  11
-210
+200
  21
-0
+20
   0
 LINE
   5
@@ -3033,7 +3033,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+contour
   6
 ByLayer
  62
@@ -3043,13 +3043,13 @@ ByLayer
 100
 AcDbLine
  10
-210
+200
  20
-0
+20
  11
-210
+200
  21
-100
+40
   0
 LINE
   5
@@ -3057,7 +3057,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+contour
   6
 ByLayer
  62
@@ -3067,13 +3067,13 @@ ByLayer
 100
 AcDbLine
  10
-210
+200
  20
-100
+40
  11
-110
+140
  21
-100
+40
   0
 LINE
   5
@@ -3081,7 +3081,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+contour
   6
 ByLayer
  62
@@ -3091,13 +3091,13 @@ ByLayer
 100
 AcDbLine
  10
-110
+140
  20
-100
+40
  11
-110
+140
  21
-0
+20
   0
 LINE
   5
@@ -3105,7 +3105,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+test
   6
 ByLayer
  62
@@ -3115,13 +3115,13 @@ ByLayer
 100
 AcDbLine
  10
-130
+0
  20
-20
+120
  11
-190
+220
  21
-20
+120
   0
 LINE
   5
@@ -3129,7 +3129,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+test
   6
 ByLayer
  62
@@ -3139,13 +3139,13 @@ ByLayer
 100
 AcDbLine
  10
-190
+220
  20
-20
+120
  11
-190
+220
  21
-80
+200
   0
 LINE
   5
@@ -3153,7 +3153,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+test
   6
 ByLayer
  62
@@ -3163,13 +3163,13 @@ ByLayer
 100
 AcDbLine
  10
-190
+220
  20
-80
+200
  11
-130
+0
  21
-80
+200
   0
 LINE
   5
@@ -3177,7 +3177,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+test
   6
 ByLayer
  62
@@ -3187,13 +3187,13 @@ ByLayer
 100
 AcDbLine
  10
-130
+0
  20
-80
+200
  11
-130
+0
  21
-20
+120
   0
 LINE
   5
@@ -3201,7 +3201,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+test
   6
 ByLayer
  62
@@ -3211,13 +3211,13 @@ ByLayer
 100
 AcDbLine
  10
-150
+20
  20
-40
+140
  11
-170
+150
  21
-40
+140
   0
 LINE
   5
@@ -3225,7 +3225,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+test
   6
 ByLayer
  62
@@ -3235,13 +3235,13 @@ ByLayer
 100
 AcDbLine
  10
-170
+150
  20
-40
+140
  11
-170
+150
  21
-60
+180
   0
 LINE
   5
@@ -3249,7 +3249,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+test
   6
 ByLayer
  62
@@ -3259,13 +3259,13 @@ ByLayer
 100
 AcDbLine
  10
-170
- 20
-60
- 11
 150
+ 20
+180
+ 11
+110
  21
-60
+180
   0
 LINE
   5
@@ -3273,7 +3273,7 @@ LINE
 100
 AcDbEntity
   8
-pocket
+test
   6
 ByLayer
  62
@@ -3283,13 +3283,109 @@ ByLayer
 100
 AcDbLine
  10
-150
+110
  20
-60
+180
  11
-150
+80
  21
+160
+  0
+LINE
+  5
+68
+100
+AcDbEntity
+  8
+test
+  6
+ByLayer
+ 62
+  256
+370
+   -1
+100
+AcDbLine
+ 10
+80
+ 20
+160
+ 11
+50
+ 21
+160
+  0
+LINE
+  5
+69
+100
+AcDbEntity
+  8
+test
+  6
+ByLayer
+ 62
+  256
+370
+   -1
+100
+AcDbLine
+ 10
+50
+ 20
+160
+ 11
 40
+ 21
+180
+  0
+LINE
+  5
+6A
+100
+AcDbEntity
+  8
+test
+  6
+ByLayer
+ 62
+  256
+370
+   -1
+100
+AcDbLine
+ 10
+40
+ 20
+180
+ 11
+20
+ 21
+180
+  0
+LINE
+  5
+6B
+100
+AcDbEntity
+  8
+test
+  6
+ByLayer
+ 62
+  256
+370
+   -1
+100
+AcDbLine
+ 10
+20
+ 20
+180
+ 11
+20
+ 21
+140
   0
 ENDSEC
   0
