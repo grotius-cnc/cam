@@ -1,12 +1,17 @@
-The Licence includes : This source code or any of it's contents is prohibited to be used in the following "black listed" countries, that violates human rights :
+The Licence includes : This source code or any of it's contents is prohibited to be used in the following "black listed" countries, that violates human rights.
 
-Black list:
+Black listed countries:
 1. France
 2. Greece
 3. United Kingdom
 4. __
 
-The Licence includes : This source code or any of it's contents is prohibited to be used by google and or youtube that violates human rights.
+The Licence includes : This source code or any of it's contents is prohibited to be used by the following "black listed companies that violates human rights.
+
+Black listed companies:
+1. Google
+2. Youtube
+3. Twitter
 
 ![joco-power](https://user-images.githubusercontent.com/44880102/126195312-21ad8ad2-9934-4f9a-8ca5-feb9db597b5f.jpg)
 ![joco-power1](https://user-images.githubusercontent.com/44880102/126195320-89a89308-8b0b-46ca-905c-5ea7eb64b7d5.jpg)
