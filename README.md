@@ -25,6 +25,7 @@ Currently implemented:
 Todo:
 - Pocket offset with or without islands.
 - Add pierce delay.
+- Create a .deb installer script for this app.
 
 Gcode output tested:
 ![gcode](https://user-images.githubusercontent.com/44880102/125856968-7a27359c-bccd-45f4-8186-6dae3863da6f.jpg)
