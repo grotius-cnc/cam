@@ -12,14 +12,19 @@ Depends : Qt + opencascade library
 
 Currently implemented:
 
-- Dxf read.
-- Opencascade cad view, selecting contours by mouse click.
-- Contour offset selected cad layer in combobox. 
-- Supported contour offset values: -, + or 0.
-- Depth sequence, cut sequence. (thermal distortion algoritme).
-- Lead-in, lead-out.
+- Dxf read, write and save example.
+- Opencascade cad view, selecting base contours by mouse click.
+- Supports offset by cad-layer.
+- Supports contour offset values: -, + or 0 (no offset).
+- Depth sequence, "keep parts together" kpt output algorimte.
+- Lead-in, lead-out for offsets.
+- Supports single-open, multiple-open, single-closed and multiple-closed primitive offsets.
 - Generates a gcode.ngc output file located in build directory.
 - Can add line-numbers to the gcode.ngc file.
+
+Todo:
+- Pocket offset with or without islands.
+- Add pierce delay.
 
 Gcode output tested:
 ![gcode](https://user-images.githubusercontent.com/44880102/125856968-7a27359c-bccd-45f4-8186-6dae3863da6f.jpg)
