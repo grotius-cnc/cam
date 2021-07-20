@@ -46,6 +46,10 @@ public:
 
     int point_in_polygon(std::vector<gp_Pnt> polygon, gp_Pnt point);
 
+    //! Keep parts together algorimte, shortened "kpt".
+    //! Return a organized list in cut seauence of contourvec.at[i]
+    std::vector<unsigned int> keep_parts_together();
+
 private:
 
 };

@@ -14,11 +14,85 @@ void contours::main(double tol, std::string layer){
     check_for_single_open_contours(tol);
     area(); // Convert all contours to clockwise [cw].
 
-    add_contour_depth_sequence();   // Wich contour is within another. This function gives a depth sequence as output saved as contourvec[i].depth
+    // Wich contour is within another. This function gives a depth sequence as output saved as contourvec[i].depth
+    // Depth 0 is toplevel. The one's with no insides.
+    // Depth 1 is a inside contour of depth 0.
+    add_contour_depth_sequence();
     add_contour_ccw();              // All contours are standard cw. When depth sequence is know'n, we can apply the ccw dir to thee contours.
+
+    // Function used by gcode class:
+    // keep_parts_together();
 
     // print_result();
     // print_depth_sequence();
+}
+
+//! Standard it cut's following the contour depth sequence. Depth 0 = toplevel. Depth 1 is a inside of depth 0.
+ std::vector<unsigned int> contours::keep_parts_together(){
+
+    std::vector<unsigned int> kpt_sequence; // KeepPartsTogether_Sequence. The "unsigned int" sequence is contourvec.at[i].
+
+    // Depth result example, 0 is toplevel:
+    // 0,1,2
+    //
+    // Will result in cut sets:
+    // 0,1 - 2
+
+    // Find maxdepth value.
+    int maxdepth=0;
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        if(maxdepth<contourvec.at(i).depth){
+            maxdepth=contourvec.at(i).depth;
+        }
+    }
+    // std::cout<<"maxdepth: "<<maxdepth<<std::endl;
+
+    // If maxdepth is equal, this means the first layer to cut is not a set. ( inner + outer )
+    // This depth is cut as normal.
+    if(maxdepth%2==0){
+        for(unsigned int j=0; j<contourvec.size(); j++){
+            if(contourvec.at(j).depth==maxdepth){
+                kpt_sequence.push_back(j);
+            }
+        }
+        // Maxdept is set to equal now. Cut sets (outer + inner) can be made.
+        maxdepth-=1;
+        // std::cout<<"maxdepth reduced to: "<<maxdepth<<std::endl;
+    }
+
+    // Starting at the bottom contour, end up at toplevel contour.
+    for(int i=maxdepth; i>-1; i--){
+
+        // Starting at a even depth number.
+        if(i%2==0){
+            for(unsigned int j=0; j<contourvec.size(); j++){
+                // The outer contour at even depth number.
+                if(contourvec.at(j).depth==i){
+                    // Look for childs of [i] in range depth+1.
+                    for(unsigned int k=0; k<contourvec.at(j).childcontours.size(); k++){
+
+                        // Find child depth:
+                        int child_depth=contourvec.at(contourvec.at(j).childcontours.at(k)).depth;
+                        if(child_depth==i+1){
+                            // Cut the childs of depth+1/
+                            kpt_sequence.push_back(contourvec.at(j).childcontours.at(k));
+                            // std::cout<<"child to cut i: "<<contourvec.at(j).childcontours.at(k)<<std::endl;
+                        }
+                    }
+                    // Cut the outer contour depth+0.
+                    kpt_sequence.push_back(j);
+                    // std::cout<<"father to cut i: "<<j<<std::endl;
+                }
+            }
+        }
+    }
+
+    // Print result:
+   for(unsigned int i=0; i<kpt_sequence.size(); i++){
+       std::cout<<"contour to cut i: "<<kpt_sequence.at(i)<<std::endl;
+   }
+
+   return kpt_sequence;
 }
 
 void contours::add_contour_ccw(){

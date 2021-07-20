@@ -388,7 +388,10 @@ void MainWindow::generate_contours(){
     // At this stage we can create contours from the individual primitives.
     // We do this in the contours class.
     gcode_get_user_settings();
-    contours().main(0.1, gc.layer); // Finding contourpoints hit tollerance in mm.
+
+    // Finding contourpoints hit tollerance in mm.
+
+    contours().main(0.1, gc.layer);
 
     // First parameter offset, + or -. Second parameter lead-in, lead-out distance, keep value positive.
     // Gc is gcode setup.

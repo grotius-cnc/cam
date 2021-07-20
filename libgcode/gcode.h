@@ -8,6 +8,7 @@
 #include <variable.h>
 #include "opencascade.h"
 #include "draw_primitives.h"
+#include <contours.h>
 using namespace occ;
 
 class gcode

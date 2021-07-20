@@ -7,6 +7,9 @@ gcode::gcode()
 
 void gcode::generate(){
 
+    // When depth sequence is calculated directly after the contour recognition, we afterwards group the contours into cut sets (inner+outer contour = one part).
+    std::vector<unsigned int> kpt_secuence=contours().keep_parts_together();
+
     linenumber=0;
     linenumber_format=gc.linenumber_format;
     bool pr=gc.print_linenumbers;
@@ -25,7 +28,6 @@ void gcode::generate(){
         gc.outtro.push_back("M30\n");
     }
 
-    int maxdepth=get_max_depth();
     std::string line_nr;
 
     std::ofstream myfile;
@@ -36,59 +38,109 @@ void gcode::generate(){
         myfile<<new_line_nr(pr)<<gc.intro.at(i);
     }
 
+    //! This is output is cutting following the depth sequence. This is not a keep parts together output.
+    for(unsigned int i=0; i<kpt_secuence.size(); i++){
+        int j=kpt_secuence.at(i);
 
-    for(int i=maxdepth; i>-1; i--){
-        for(unsigned int j=0; j<contourvec.size(); j++){
-            if(contourvec.at(j).depth==i){
+        myfile<<new_line_nr(pr)<<"(Contour id:"<<j<<")"<<"\n";
 
-                myfile<<new_line_nr(pr)<<"(Contour id:"<<j<<")"<<"\n";
+        // Contour lead-in. Only when contourtypes are closed.
+        if(contourvec.at(j).primitive_sequence.front().contourtype==contour_type::single_closed || contourvec.at(j).primitive_sequence.front().contourtype==contour_type::multi_closed){
+            std::vector<gp_Pnt> pntvec=get_lead_in_points(j);
+            myfile<<new_line_nr(pr)<<"G0 X"<<pntvec.front().X()<<" Y"<<pntvec.front().Y()<<" Z"<<gc.travelheight<<"\n";
+            myfile<<new_line_nr(pr)<<"G0 Z"<<gc.pierceheight<<"\n";
+            myfile<<new_line_nr(pr)<<"M3 S"<<gc.power<<"\n";
+            myfile<<new_line_nr(pr)<<"G1 Z"<<gc.cutheight<<" F"<<gc.piercespeed<<"\n";
+            myfile<<new_line_nr(pr)<<"G1 X"<<pntvec.back().X()<<" Y"<<pntvec.back().Y()<<" F"<<gc.feedrate<<"\n";
+        }
+        // Contour lead-in. Only when contourtypes are open.
+        if(contourvec.at(j).primitive_sequence.front().contourtype==contour_type::single_open || contourvec.at(j).primitive_sequence.front().contourtype==contour_type::multi_open){
+            myfile<<new_line_nr(pr)<<"G0 X"<<contourvec.at(j).primitive_sequence.front().start.X()<<" Y"<<contourvec.at(j).primitive_sequence.front().start.Y()<<" Z"<<gc.travelheight<<"\n";
+            myfile<<new_line_nr(pr)<<"G0 Z"<<gc.pierceheight<<"\n";
+            myfile<<new_line_nr(pr)<<"M3 S"<<gc.power<<"\n";
+            myfile<<new_line_nr(pr)<<"G1 Z"<<gc.cutheight<<" F"<<gc.piercespeed<<"\n";
+        }
 
-                // Contour lead-in
-                std::vector<gp_Pnt> pntvec=get_lead_in_points(j);
-                myfile<<new_line_nr(pr)<<"G0 X"<<pntvec.front().X()<<" Y"<<pntvec.front().Y()<<" Z"<<gc.travelheight<<"\n";
-                myfile<<new_line_nr(pr)<<"G0 Z"<<gc.pierceheight<<"\n";
-                myfile<<new_line_nr(pr)<<"M3 S"<<gc.power<<"\n";
-                myfile<<new_line_nr(pr)<<"G1 Z"<<gc.cutheight<<" F"<<gc.piercespeed<<"\n";
-                myfile<<new_line_nr(pr)<<"G1 X"<<pntvec.back().X()<<" Y"<<pntvec.back().Y()<<" F"<<gc.feedrate<<"\n";
-
-                // Generate contour gcode
-                    for(unsigned int k=0; k<contourvec.at(j).offset_sequence.size(); k++){
-                        // [G1]
-                        if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::line){
-                            myfile<<new_line_nr(pr)<<"G1 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
-                                 <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
-                                <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
-                               <<" F"<<gc.feedrate
-                              <<"\n";
-                        }
-                        // [G2] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
-                        if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::arc && contourvec.at(j).offset_sequence.at(k).bulge<0){
-                            myfile<<new_line_nr(pr)<<"G2 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
-                                 <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
-                                <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
-                               <<" I"<<contourvec.at(j).offset_sequence.at(k).center.X()-contourvec.at(j).offset_sequence.at(k).start.X()
-                              <<" J"<<contourvec.at(j).offset_sequence.at(k).center.Y()-contourvec.at(j).offset_sequence.at(k).start.Y()
-                             <<" F"<<gc.feedrate
-                            <<"\n";
-                        }
-                        // [G3] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
-                        if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::arc && contourvec.at(j).offset_sequence.at(k).bulge>0){
-                            myfile<<new_line_nr(pr)<<"G3 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
-                                 <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
-                                <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
-                               <<" I"<<contourvec.at(j).offset_sequence.at(k).center.X()-contourvec.at(j).offset_sequence.at(k).start.X()
-                              <<" J"<<contourvec.at(j).offset_sequence.at(k).center.Y()-contourvec.at(j).offset_sequence.at(k).start.Y()
-                             <<" F"<<gc.feedrate
-                            <<"\n";
-                        }
-                    }
-
-                // Contour lead-out
-                pntvec=get_lead_out_points(j);
-                myfile<<new_line_nr(pr)<<"G1 X"<<pntvec.front().X()<<" Y"<<pntvec.front().Y()<<"\n";
-                myfile<<new_line_nr(pr)<<"M5"<<"\n";
-                myfile<<new_line_nr(pr)<<"G0 Z"<<gc.travelheight<<"\n";
+        // Generate contour gcode for closed contours.
+        if(contourvec.at(j).primitive_sequence.front().contourtype==contour_type::single_closed || contourvec.at(j).primitive_sequence.front().contourtype==contour_type::multi_closed){
+            for(unsigned int k=0; k<contourvec.at(j).offset_sequence.size(); k++){
+                // [G1]
+                if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::line){
+                    myfile<<new_line_nr(pr)<<"G1 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
+                         <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
+                        <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
+                       <<" F"<<gc.feedrate
+                      <<"\n";
+                }
+                // [G2] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
+                if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::arc && contourvec.at(j).offset_sequence.at(k).bulge<0){
+                    myfile<<new_line_nr(pr)<<"G2 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
+                         <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
+                        <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
+                       <<" I"<<contourvec.at(j).offset_sequence.at(k).center.X()-contourvec.at(j).offset_sequence.at(k).start.X()
+                      <<" J"<<contourvec.at(j).offset_sequence.at(k).center.Y()-contourvec.at(j).offset_sequence.at(k).start.Y()
+                     <<" F"<<gc.feedrate
+                    <<"\n";
+                }
+                // [G3] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
+                if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::arc && contourvec.at(j).offset_sequence.at(k).bulge>0){
+                    myfile<<new_line_nr(pr)<<"G3 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
+                         <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
+                        <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
+                       <<" I"<<contourvec.at(j).offset_sequence.at(k).center.X()-contourvec.at(j).offset_sequence.at(k).start.X()
+                      <<" J"<<contourvec.at(j).offset_sequence.at(k).center.Y()-contourvec.at(j).offset_sequence.at(k).start.Y()
+                     <<" F"<<gc.feedrate
+                    <<"\n";
+                }
             }
+        }
+
+        // Generate contour gcode for open contours. (no offset is applied)
+        if(contourvec.at(j).primitive_sequence.front().contourtype==contour_type::single_open || contourvec.at(j).primitive_sequence.front().contourtype==contour_type::multi_open){
+            for(unsigned int k=0; k<contourvec.at(j).primitive_sequence.size(); k++){
+                // [G1]
+                if(contourvec.at(j).primitive_sequence.at(k).primitivetype==primitive_type::line){
+                    myfile<<new_line_nr(pr)<<"G1 X"<<contourvec.at(j).primitive_sequence.at(k).end.X()
+                         <<" Y"<<contourvec.at(j).primitive_sequence.at(k).end.Y()
+                        <<" Z"<<contourvec.at(j).primitive_sequence.at(k).end.Z()
+                       <<" F"<<gc.feedrate
+                      <<"\n";
+                }
+                // [G2] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
+                if(contourvec.at(j).primitive_sequence.at(k).primitivetype==primitive_type::arc && contourvec.at(j).primitive_sequence.at(k).bulge<0){
+                    myfile<<new_line_nr(pr)<<"G2 X"<<contourvec.at(j).primitive_sequence.at(k).end.X()
+                         <<" Y"<<contourvec.at(j).primitive_sequence.at(k).end.Y()
+                        <<" Z"<<contourvec.at(j).primitive_sequence.at(k).end.Z()
+                       <<" I"<<contourvec.at(j).primitive_sequence.at(k).center.X()-contourvec.at(j).primitive_sequence.at(k).start.X()
+                      <<" J"<<contourvec.at(j).primitive_sequence.at(k).center.Y()-contourvec.at(j).primitive_sequence.at(k).start.Y()
+                     <<" F"<<gc.feedrate
+                    <<"\n";
+                }
+                // [G3] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
+                if(contourvec.at(j).primitive_sequence.at(k).primitivetype==primitive_type::arc && contourvec.at(j).primitive_sequence.at(k).bulge>0){
+                    myfile<<new_line_nr(pr)<<"G3 X"<<contourvec.at(j).primitive_sequence.at(k).end.X()
+                         <<" Y"<<contourvec.at(j).primitive_sequence.at(k).end.Y()
+                        <<" Z"<<contourvec.at(j).primitive_sequence.at(k).end.Z()
+                       <<" I"<<contourvec.at(j).primitive_sequence.at(k).center.X()-contourvec.at(j).primitive_sequence.at(k).start.X()
+                      <<" J"<<contourvec.at(j).primitive_sequence.at(k).center.Y()-contourvec.at(j).primitive_sequence.at(k).start.Y()
+                     <<" F"<<gc.feedrate
+                    <<"\n";
+                }
+            }
+        }
+
+        // Contour lead-out, Only when contourtypes are closed.
+        if(contourvec.at(j).primitive_sequence.front().contourtype==contour_type::single_closed || contourvec.at(j).primitive_sequence.front().contourtype==contour_type::multi_closed){
+            std::vector<gp_Pnt> pntvec=get_lead_out_points(j);
+            myfile<<new_line_nr(pr)<<"G1 X"<<pntvec.front().X()<<" Y"<<pntvec.front().Y()<<"\n";
+            myfile<<new_line_nr(pr)<<"M5"<<"\n";
+            myfile<<new_line_nr(pr)<<"G0 Z"<<gc.travelheight<<"\n";
+        }
+        // Contour lead-out. Only when contourtypes are open.
+        if(contourvec.at(j).primitive_sequence.front().contourtype==contour_type::single_open || contourvec.at(j).primitive_sequence.front().contourtype==contour_type::multi_open){
+            myfile<<new_line_nr(pr)<<"G1 X"<<contourvec.at(j).primitive_sequence.back().end.X()<<" Y"<<contourvec.at(j).primitive_sequence.back().end.Y()<<"\n";
+            myfile<<new_line_nr(pr)<<"M5"<<"\n";
+            myfile<<new_line_nr(pr)<<"G0 Z"<<gc.travelheight<<"\n";
         }
     }
 
@@ -154,7 +206,63 @@ int gcode::get_max_depth(){
 }
 
 
+//! This output is cutting following the depth sequence. This is not a keep parts together output.
+/*
+for(int i=maxdepth; i>-1; i--){
+    for(unsigned int j=0; j<contourvec.size(); j++){
+        if(contourvec.at(j).depth==i){
 
+            myfile<<new_line_nr(pr)<<"(Contour id:"<<j<<")"<<"\n";
+
+            // Contour lead-in
+            std::vector<gp_Pnt> pntvec=get_lead_in_points(j);
+            myfile<<new_line_nr(pr)<<"G0 X"<<pntvec.front().X()<<" Y"<<pntvec.front().Y()<<" Z"<<gc.travelheight<<"\n";
+            myfile<<new_line_nr(pr)<<"G0 Z"<<gc.pierceheight<<"\n";
+            myfile<<new_line_nr(pr)<<"M3 S"<<gc.power<<"\n";
+            myfile<<new_line_nr(pr)<<"G1 Z"<<gc.cutheight<<" F"<<gc.piercespeed<<"\n";
+            myfile<<new_line_nr(pr)<<"G1 X"<<pntvec.back().X()<<" Y"<<pntvec.back().Y()<<" F"<<gc.feedrate<<"\n";
+
+            // Generate contour gcode
+                for(unsigned int k=0; k<contourvec.at(j).offset_sequence.size(); k++){
+                    // [G1]
+                    if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::line){
+                        myfile<<new_line_nr(pr)<<"G1 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
+                             <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
+                            <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
+                           <<" F"<<gc.feedrate
+                          <<"\n";
+                    }
+                    // [G2] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
+                    if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::arc && contourvec.at(j).offset_sequence.at(k).bulge<0){
+                        myfile<<new_line_nr(pr)<<"G2 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
+                             <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
+                            <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
+                           <<" I"<<contourvec.at(j).offset_sequence.at(k).center.X()-contourvec.at(j).offset_sequence.at(k).start.X()
+                          <<" J"<<contourvec.at(j).offset_sequence.at(k).center.Y()-contourvec.at(j).offset_sequence.at(k).start.Y()
+                         <<" F"<<gc.feedrate
+                        <<"\n";
+                    }
+                    // [G3] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
+                    if(contourvec.at(j).offset_sequence.at(k).primitivetype==primitive_type::arc && contourvec.at(j).offset_sequence.at(k).bulge>0){
+                        myfile<<new_line_nr(pr)<<"G3 X"<<contourvec.at(j).offset_sequence.at(k).end.X()
+                             <<" Y"<<contourvec.at(j).offset_sequence.at(k).end.Y()
+                            <<" Z"<<contourvec.at(j).offset_sequence.at(k).end.Z()
+                           <<" I"<<contourvec.at(j).offset_sequence.at(k).center.X()-contourvec.at(j).offset_sequence.at(k).start.X()
+                          <<" J"<<contourvec.at(j).offset_sequence.at(k).center.Y()-contourvec.at(j).offset_sequence.at(k).start.Y()
+                         <<" F"<<gc.feedrate
+                        <<"\n";
+                    }
+                }
+
+            // Contour lead-out
+            pntvec=get_lead_out_points(j);
+            myfile<<new_line_nr(pr)<<"G1 X"<<pntvec.front().X()<<" Y"<<pntvec.front().Y()<<"\n";
+            myfile<<new_line_nr(pr)<<"M5"<<"\n";
+            myfile<<new_line_nr(pr)<<"G0 Z"<<gc.travelheight<<"\n";
+        }
+    }
+}
+*/
 
 
 

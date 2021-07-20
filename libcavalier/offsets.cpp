@@ -12,17 +12,30 @@ offsets::offsets()
 
 }
 
+void offsets::do_pockets(double offset_contour /* offset from contour base */, double pocket_overlap /* pocket overlap 0-100% */, offset_action action, double lead_in, double lead_out){
+
+
+
+}
 
 void offsets::do_offset(double offset, offset_action action, double lead_in, double lead_out){
 
     Quantity_Color color;
 
+    if(offset>=0){
+        lead_in+=offset;
+        lead_out+=offset;
+    }
     if(offset<0){
-        lead_in=lead_in*-1;
-        lead_out=lead_out*-1;
+        lead_in=-abs(lead_in)+offset;       std::cout<<"lead_in: "<<lead_in<<std::endl;
+        lead_out=-abs(lead_out)+offset;     std::cout<<"lead_out: "<<lead_out<<std::endl;
     }
 
     for(unsigned int i=0; i<contourvec.size(); i++){
+
+        if(contourvec.at(i).primitive_sequence.at(0).contourtype==contour_type::multi_open || contourvec.at(i).primitive_sequence.at(0).contourtype==contour_type::single_open){
+
+        }
 
         if(contourvec.at(i).primitive_sequence.at(0).contourtype==contour_type::multi_closed || contourvec.at(i).primitive_sequence.at(0).contourtype==contour_type::single_closed){
             unsigned int ii=i;
@@ -75,16 +88,16 @@ void offsets::do_offset(double offset, offset_action action, double lead_in, dou
                 results = cavc::parallelOffset(outerloop, offset);
             }
             if(action==offset_action::lead_in_contour){
-                results = cavc::parallelOffset(outerloop, offset+lead_in);
+                results = cavc::parallelOffset(outerloop, lead_in);
             }
             if(action==offset_action::lead_out_contour){
-                results = cavc::parallelOffset(outerloop, offset+lead_out);
+                results = cavc::parallelOffset(outerloop, lead_out);
             }
 
             // std::cout<<"cavalier results.size: "<<results.size()<<std::endl;
 
             // Draw processed data
-            struct datas d;
+            datas d;
             for(unsigned int is=0; is<results.size(); is++){ //cw loops
                 for(unsigned int j=0; j<results.at(is).vertexes().size()-1; j++){
 
@@ -215,7 +228,7 @@ void offsets::create_lead_in_out(double lead_in, double lead_out){
                 p2=contourvec.at(i).lead_base.points.at(k);
                 double lenght=draw_primitives().get_3d_line_lenght(p1,p2);
                 // std::cout<<"lenght: "<<lenght<<std::endl;
-                if(lenght<lead_in*2 ){ // Failsafe solution.
+                if(lenght<abs(lead_in)*2 ){ // Failsafe solution. Abs is used when lead_in has a negative value. This happens when user defines a contour offset value < 0.
                     contourvec.at(i).lead_in.ashape = draw_primitives().draw_3d_line(p1,p2);
                     contourvec.at(i).lead_in.ashape = draw_primitives().colorize(contourvec.at(i).lead_in.ashape,color,0);
                     // OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);
@@ -234,7 +247,7 @@ void offsets::create_lead_in_out(double lead_in, double lead_out){
                 p2=contourvec.at(i).lead_base.points.at(k);
                 double lenght=draw_primitives().get_3d_line_lenght(p1,p2);
                 // std::cout<<"lenght: "<<lenght<<std::endl;
-                if(lenght<lead_out*2){ // Failsafe solution.
+                if(lenght<abs(lead_out)*2){ // Failsafe solution.
                     contourvec.at(i).lead_out.ashape = draw_primitives().draw_3d_line(p1,p2);
                     contourvec.at(i).lead_out.ashape = draw_primitives().colorize(contourvec.at(i).lead_out.ashape,color,0);
                     // OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);

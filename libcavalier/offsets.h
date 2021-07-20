@@ -25,7 +25,8 @@ public:
     POINT bulge_to_arc_controlpoint(POINT p1, POINT p2, double bulge); //find the arc center
     POINT rotate_3d(double x_to_rotate,double y_to_rotate, double z_to_rotate, double rotate_degrees_x, double rotate_degrees_y, double rotate_degrees_z);
 
-
+    //! Create pockets, with or without islands.
+    void do_pockets(double offset_contour /* offset from contour base */, double pocket_overlap /* pocket overlap 0-100% */, offset_action action, double lead_in, double lead_out);
 };
 
 
