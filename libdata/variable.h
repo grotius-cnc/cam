@@ -80,6 +80,8 @@ extern std::vector<contour> contourvec, pocketvec;
 struct gcode_setup{
     std::string filename="gcode.ngc";
     std::string linenumber_format="N";
+    std::string z_axis_format="Z";
+    std::string tool_on_macro="";
 
     bool print_linenumbers=true;
     double lead_in;
@@ -93,6 +95,7 @@ struct gcode_setup{
     double power;
     double feedrate;
     double internal_pocket_offset;
+    double tooloffset_x, tooloffset_y, tooloffset_z;
 
     std::string layer;
     std::vector<std::string> intro;
@@ -101,6 +104,9 @@ struct gcode_setup{
     std::string operation_type;  // Offset, pocket, drill.
 };
 extern gcode_setup gc;
+extern std::vector<gcode_setup> gcvec;
+
+extern int linenumber;
 
 extern std::vector<unsigned int> kpt_sequence; // Keep parts together list.
 

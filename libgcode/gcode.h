@@ -17,6 +17,7 @@ class gcode
 public:
     gcode();
     void generate(); // Will produce a gcode file in the program build directory with a .ngc extension.
+    void clear();    // Remove all content of gcode.ngc file.
 
     //! Helper functions:
     std::vector<gp_Pnt> get_lead_in_points(unsigned int i /* contourvec[i]*/);
@@ -25,7 +26,6 @@ public:
     std::string new_line_nr(bool print); // If print=0 there are no line numbers printed in gcode output file.
 
 private:
-    unsigned int linenumber=0;
     std::string linenumber_format={};
 };
 

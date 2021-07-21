@@ -66,12 +66,18 @@ public:
 private slots:
     void process();
 
-
     void rotate_lead_in_out();
+
+    void add_operation();
+
+    void clear_operations();
+
+    void process_operations();
 
     void on_toolButton_open_dxf_pressed();
 
     void on_toolButton_stacket_page_plus_pressed();
+
 
 
 private:

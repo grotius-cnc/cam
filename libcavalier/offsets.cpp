@@ -53,6 +53,17 @@ void offsets::do_pocket(){
                         island.addVertex(xc, yc, bulge[0]); //startpoint arc + bulge
                     }
                 }
+
+                if(contourvec.at(kpt_sequence.at(i)).primitive_sequence.at(j).primitivetype==primitive_type::circle){
+
+                    double xcen=contourvec.at(kpt_sequence.at(i)).primitive_sequence.at(j).center.X();
+                    double ycen=contourvec.at(kpt_sequence.at(i)).primitive_sequence.at(j).center.Y();
+
+                    double radius=contourvec.at(kpt_sequence.at(i)).primitive_sequence.at(j).radius;
+
+                    island.addVertex(xcen+radius, ycen, -1); //startpoint arc + full bulge=semicircle, -1=g2, 1=g3
+                    island.addVertex(xcen-radius, ycen, -1); //startpoint arc + bulge
+                }
             }
             island.isClosed() = true;
             islands.push_back(island);
@@ -88,6 +99,17 @@ void offsets::do_pocket(){
                         outerloop.addVertex(xs, ys, bulge[0]); //startpoint arc + bulge
                         outerloop.addVertex(xc, yc, bulge[0]); //startpoint arc + bulge
                     }
+                }
+
+                if(contourvec.at(kpt_sequence.at(i)).primitive_sequence.at(j).primitivetype==primitive_type::circle){
+
+                    double xcen=contourvec.at(kpt_sequence.at(i)).primitive_sequence.at(j).center.X();
+                    double ycen=contourvec.at(kpt_sequence.at(i)).primitive_sequence.at(j).center.Y();
+
+                    double radius=contourvec.at(kpt_sequence.at(i)).primitive_sequence.at(j).radius;
+
+                    outerloop.addVertex(xcen+radius, ycen, 1); //startpoint arc + full bulge=semicircle, -1=g2, 1=g3
+                    outerloop.addVertex(xcen-radius, ycen, 1); //startpoint arc + bulge
                 }
             }
             //std::reverse(outerloop.vertexes().begin(),outerloop.vertexes().end()); // Reverse contour direction to ccw for a inside offset of the outerloop.
@@ -343,6 +365,26 @@ void offsets::do_offset(double offset, offset_action action, double lead_in, dou
                         outerloop.addVertex(xs, ys, bulge[0]); //startpoint arc + bulge
                         outerloop.addVertex(xc, yc, bulge[0]); //startpoint arc + bulge
                     }
+                }
+
+                if(contourvec.at(i).primitive_sequence.at(j).primitivetype==primitive_type::circle){
+
+                    double xcen=contourvec.at(i).primitive_sequence.at(j).center.X();
+                    double ycen=contourvec.at(i).primitive_sequence.at(j).center.Y();
+
+                    double radius=contourvec.at(i).primitive_sequence.at(j).radius;
+
+                   /// std::vector<double> bulge=arc_bulge(contourvec.at(i).primitive_sequence.at(j));
+
+                    if(contourvec.at(i).depth%2==0){ // [cw] depth.
+                        outerloop.addVertex(xcen+radius, ycen, -1); //startpoint arc + full bulge=semicircle, -1=g2, 1=g3
+                        outerloop.addVertex(xcen-radius, ycen, -1); //startpoint arc + bulge
+                    }
+                    if(contourvec.at(i).depth%2!=0){ // [ccw] depth.
+                        outerloop.addVertex(xcen+radius, ycen, 1); //startpoint arc + full bulge=semicircle, -1=g2, 1=g3
+                        outerloop.addVertex(xcen-radius, ycen, 1); //startpoint arc + bulge
+                    }
+
                 }
             }
             outerloop.isClosed() = true;

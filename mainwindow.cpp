@@ -10,7 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     // https://www.youtube.com/watch?v=2VIGb31iwds
 
-    ui->stackedWidget->setCurrentIndex(0);
+    ui->stackedWidget->setCurrentIndex(1);
 
     OpencascadeWidget = new Opencascade(this);
     ui->gridLayout_opencascade->addWidget(OpencascadeWidget);
@@ -20,12 +20,62 @@ MainWindow::MainWindow(QWidget *parent)
     timer->start(200);
 
     QObject::connect(ui->toolButton_edit_lead_in_out, SIGNAL(pressed()),SLOT(rotate_lead_in_out()));
-    QObject::connect(ui->toolButton_process, SIGNAL(pressed()),SLOT(process()));
+    QObject::connect(ui->toolButton_add_operation, SIGNAL(pressed()),SLOT(add_operation()));
+    QObject::connect(ui->toolButton_process_gcode, SIGNAL(pressed()),SLOT(process_operations()));
+    QObject::connect(ui->toolButton_clear_operations, SIGNAL(pressed()),SLOT(clear_operations()));
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::add_operation(){
+
+    gcode_get_user_settings(); // Update gc.
+    gcvec.push_back(gc);
+    ui->listWidget->addItem(QString::fromStdString(gc.layer));
+    process();
+}
+
+void MainWindow::process_operations(){
+    linenumber=0; // Reset gcode linenumber.
+    gcode().clear();
+
+    gc.operation_type="intro";
+    gcode().generate();
+
+    for(unsigned int i=0; i<gcvec.size(); i++){
+        // Set the gcode parameters for this job.
+        gc=gcvec.at(i);
+        // Create offsets, pockets, etc.
+        process();
+        // Create gcode for this job.
+        gcode().generate();
+    }
+
+    gc.operation_type="outtro";
+    gcode().generate();
+
+    gcode_preview();    // Update the mainwindow gcode preview:
+}
+
+void MainWindow::clear_operations(){
+    OpencascadeWidget->erase_all(); // Erases all content from the screen.
+    contourvec.clear();
+    pocketvec.clear();
+    datavec.clear();
+
+    // Draw only the dxf data back on the screen:
+    for(unsigned int i=0; i<dxfvec.size(); i++){
+        OpencascadeWidget->show_shape(dxfvec.at(i).ashape); // Dxf drawing preview.
+    }
+    OpencascadeWidget->show_3d_interactive_box();
+
+    gcvec.clear();
+    ui->listWidget->clear();
+    gcode().clear(); // Empty gcode.ngc file
+    gcode_preview(); // Preview empty gcode.ngc file
 }
 
 void MainWindow::Update_Opencascade()
@@ -37,7 +87,10 @@ bool MainWindow::open_dxf_file(std::string filename){
 
     // OpencascadeWidget->erase_all();
     contourvec.clear();
+    pocketvec.clear();
     datavec.clear();
+    dxfvec.clear();
+    ui->comboBox_layer->clear();
     dx_iface().clear(&fData);           // Clear previous loaded dxf data.
 
     bool ok = iface->fileImport( filename, &fData );
@@ -330,15 +383,23 @@ void MainWindow::load_opencascade_primitives(){
 void MainWindow::process(){
 
     // Remove all previous offsets.
-    OpencascadeWidget->erase_all();
-    for(unsigned int i=0; i<contourvec.size(); i++){
-        contourvec.at(i).offset_sequence.clear();
-        contourvec.at(i).lead_base.points.clear();
-        contourvec.at(i).lead_in.points.clear();
-        contourvec.at(i).lead_out.points.clear();
-    }
+    // OpencascadeWidget->erase_all();
+//    for(unsigned int i=0; i<contourvec.size(); i++){
+//        contourvec.at(i).offset_sequence.clear();
+//        contourvec.at(i).lead_base.points.clear();
+//        contourvec.at(i).lead_in.points.clear();
+//        contourvec.at(i).lead_out.points.clear();
+//    }
+//    for(unsigned int i=0; i<pocketvec.size(); i++){
+//        pocketvec.at(i).offset_sequence.clear();
+//    }
 
-    gcode_get_user_settings();
+    contourvec.clear();
+    pocketvec.clear();
+    datavec.clear();
+
+
+    // gcode_get_user_settings();
 
     // Check what user has selected. Did he select the combobox [offset] or [pocket] item?
     if(gc.operation_type=="contour"){
@@ -372,8 +433,8 @@ void MainWindow::generate_pockets(){
 
     OpencascadeWidget->show_3d_interactive_box();
 
-    gcode().generate();
-    gcode_preview();    // Update the mainwindow gcode preview:
+    // gcode().generate();
+    // gcode_preview();    // Update the mainwindow gcode preview:
 }
 
 //! Class to perform offsets.
@@ -406,8 +467,8 @@ void MainWindow::generate_contours(){
     }
     OpencascadeWidget->show_3d_interactive_box();
 
-    gcode().generate();
-    gcode_preview();    // Update the mainwindow gcode preview:
+    // gcode().generate();
+    // gcode_preview();    // Update the mainwindow gcode preview:
 }
 
 //! Move the lead_in-out to next position of the contourvec.at[i]. We simply rotote the primitive sequence vector +1.
@@ -451,6 +512,7 @@ void MainWindow::rotate_lead_in_out(){
     }
     OpencascadeWidget->show_3d_interactive_box();
 
+    linenumber=0; // Reset gcode linenumber.
     gcode().generate();                                                                         // Generate gcode.
     // Update the mainwindow gcode preview:
     gcode_preview();
@@ -471,6 +533,11 @@ void MainWindow::gcode_get_user_settings(){
     gc.offset=ui->lineEdit_offset->text().toDouble();
     gc.layer=ui->comboBox_layer->currentText().toStdString();
     gc.internal_pocket_offset=ui->lineEdit_pocket_internal_offset->text().toDouble();
+    gc.z_axis_format=ui->lineEdit_z_axis_format->text().toStdString();
+    gc.tooloffset_x=ui->lineEdit_tooloffset_x->text().toDouble();
+    gc.tooloffset_y=ui->lineEdit_tooloffset_y->text().toDouble();
+    gc.tooloffset_z=ui->lineEdit_tooloffset_z->text().toDouble();
+    gc.tool_on_macro=ui->lineEdit_tool_on_macro->text().toStdString();
 
     // Intro
     QString plainTextEditContents = ui->plainTextEdit_intro->toPlainText();
