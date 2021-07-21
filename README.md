@@ -42,6 +42,7 @@ Currently implemented:
 
 Todo:
 
+- Show rapids.
 - Create a .deb installer script for this app.
 
 Gcode output tested:
