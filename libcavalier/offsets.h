@@ -3,7 +3,7 @@
 
 #include <variable.h>
 
-struct POINT{ // To be replaced by gp_Pnt.
+struct POINTS{ // To be replaced by gp_Pnt.
     double x,y,z;
 };
 
@@ -19,14 +19,18 @@ public:
 
     //! Helper functions, grabbed from old code example :
     std::vector<double> arc_bulge(datas p /* primitive */);
-    double arc_determinant(POINT a /* arc startpoint */, POINT b /* a arc circumfence point*/, POINT c /* arc endpoint*/);
-    POINT arc_center(POINT a /* arc startpoint */, POINT b /* arc controlpoint*/, POINT c /* arc endpoint */);
-    POINT offset_point_on_line(double xs, double ys, double xe, double ye, double offset_from_xs_ys);
-    POINT bulge_to_arc_controlpoint(POINT p1, POINT p2, double bulge); //find the arc center
-    POINT rotate_3d(double x_to_rotate,double y_to_rotate, double z_to_rotate, double rotate_degrees_x, double rotate_degrees_y, double rotate_degrees_z);
+    double arc_determinant(POINTS a /* arc startpoint */, POINTS b /* a arc circumfence point*/, POINTS c /* arc endpoint*/);
+    POINTS arc_center(POINTS a /* arc startpoint */, POINTS b /* arc controlpoint*/, POINTS c /* arc endpoint */);
+    POINTS offset_point_on_line(double xs, double ys, double xe, double ye, double offset_from_xs_ys);
+    POINTS bulge_to_arc_controlpoint(POINTS p1, POINTS p2, double bulge); //find the arc center
+    POINTS rotate_3d(double x_to_rotate,double y_to_rotate, double z_to_rotate, double rotate_degrees_x, double rotate_degrees_y, double rotate_degrees_z);
+    void swap_contour(unsigned int i /*contourvec.at(i)*/); // A copy function from contour class.
 
     //! Create pockets, with or without islands.
-    void do_pockets(double offset_contour /* offset from contour base */, double pocket_overlap /* pocket overlap 0-100% */, offset_action action, double lead_in, double lead_out);
+    void do_pocket();
+    //void process_pocket(cavc::Polyline<double> outerloop, std::vector<cavc::Polyline<double>> islands, unsigned int contourvec_i);
+    //void draw_pocket(cavc::OffsetLoopSet<double> results, unsigned int contourvec_i);
+
 };
 
 

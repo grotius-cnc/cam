@@ -28,11 +28,12 @@ enum contour_dir {
     ccw=1,
 };
 
-enum offset_action{
+enum offset_action {
     offset_contour=0,
     lead_base_contour=1,
     lead_in_contour=2,
     lead_out_contour=3,
+    pocket=4,
 };
 
 struct datas {
@@ -74,28 +75,36 @@ struct contour {
     bool select=false;
     int depth=0;
 };
-extern std::vector<contour> contourvec;
+extern std::vector<contour> contourvec, pocketvec;
 
 struct gcode_setup{
     std::string filename="gcode.ngc";
     std::string linenumber_format="N";
 
     bool print_linenumbers=true;
-    double lead_in=3;
-    double lead_out=1;
-    double offset=2;
-    double travelheight=10;
-    double pierceheight=8;
-    double piercespeed=500;
-    double cutheight=0;
-    double power=45;
-    double feedrate=1400;
+    double lead_in;
+    double lead_out;
+    double offset;
+    double travelheight;
+    double pierceheight;
+    double piercespeed;
+    double piercedelay;
+    double cutheight;
+    double power;
+    double feedrate;
+    double internal_pocket_offset;
 
     std::string layer;
     std::vector<std::string> intro;
     std::vector<std::string> outtro;
+
+    std::string operation_type;  // Offset, pocket, drill.
 };
 extern gcode_setup gc;
+
+extern std::vector<unsigned int> kpt_sequence; // Keep parts together list.
+
+extern int maxdepth;
 
 class variable
 {

@@ -18,17 +18,32 @@ void contours::main(double tol, std::string layer){
     // Depth 0 is toplevel. The one's with no insides.
     // Depth 1 is a inside contour of depth 0.
     add_contour_depth_sequence();
-    add_contour_ccw();              // All contours are standard cw. When depth sequence is know'n, we can apply the ccw dir to thee contours.
+    maxdepth=get_max_depth();           // Save the maxdepth value as a global variable.
+    kpt_sequence=keep_parts_together(); // Save the keep parts together list as a global variable list.
 
-    // Function used by gcode class:
-    // keep_parts_together();
+    // For contour offsets:
+    // All contours are standard cw. When depth sequence is know'n, we can apply the ccw dir to contours.
+    // add_contour_ccw(); -> done in mainwindow class.
 
     // print_result();
     // print_depth_sequence();
 }
 
+//! Function to get the maxdepth value. A toplevel contour should be depth=0. A inside contour of depth=0 would be depth=1.
+int contours::get_max_depth(){
+    // Find maxdepth value.
+    int maxdepth=0;
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        if(maxdepth<contourvec.at(i).depth){
+            maxdepth=contourvec.at(i).depth;
+        }
+    }
+    // std::cout<<"maxdepth:"<<maxdepth<<std::endl;
+    return maxdepth;
+}
+
 //! Standard it cut's following the contour depth sequence. Depth 0 = toplevel. Depth 1 is a inside of depth 0.
- std::vector<unsigned int> contours::keep_parts_together(){
+std::vector<unsigned int> contours::keep_parts_together(){
 
     std::vector<unsigned int> kpt_sequence; // KeepPartsTogether_Sequence. The "unsigned int" sequence is contourvec.at[i].
 
@@ -39,12 +54,7 @@ void contours::main(double tol, std::string layer){
     // 0,1 - 2
 
     // Find maxdepth value.
-    int maxdepth=0;
-    for(unsigned int i=0; i<contourvec.size(); i++){
-        if(maxdepth<contourvec.at(i).depth){
-            maxdepth=contourvec.at(i).depth;
-        }
-    }
+
     // std::cout<<"maxdepth: "<<maxdepth<<std::endl;
 
     // If maxdepth is equal, this means the first layer to cut is not a set. ( inner + outer )

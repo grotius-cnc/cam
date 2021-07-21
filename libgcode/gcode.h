@@ -9,6 +9,7 @@
 #include "opencascade.h"
 #include "draw_primitives.h"
 #include <contours.h>
+
 using namespace occ;
 
 class gcode
@@ -18,7 +19,6 @@ public:
     void generate(); // Will produce a gcode file in the program build directory with a .ngc extension.
 
     //! Helper functions:
-    int get_max_depth();
     std::vector<gp_Pnt> get_lead_in_points(unsigned int i /* contourvec[i]*/);
     std::vector<gp_Pnt> get_lead_out_points(unsigned int i /* contourvec[i]*/);
     unsigned int increment_line_nr();

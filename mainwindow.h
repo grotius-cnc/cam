@@ -60,9 +60,14 @@ public:
     void gcode_preview();
     void gcode_get_user_settings();
 
-private slots:
-    void rotate_lead_in_out();
     void generate_contours();
+    void generate_pockets();
+
+private slots:
+    void process();
+
+
+    void rotate_lead_in_out();
 
     void on_toolButton_open_dxf_pressed();
 

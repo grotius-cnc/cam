@@ -46,6 +46,9 @@ public:
 
     int point_in_polygon(std::vector<gp_Pnt> polygon, gp_Pnt point);
 
+    //! A toplevel contour is depth=0. A inside contour of depth=0 would be depth=1. How deep parts are nested is saved by the maxdepth value.
+    int get_max_depth();
+
     //! Keep parts together algorimte, shortened "kpt".
     //! Return a organized list in cut seauence of contourvec.at[i]
     std::vector<unsigned int> keep_parts_together();

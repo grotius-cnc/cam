@@ -20,7 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
     timer->start(200);
 
     QObject::connect(ui->toolButton_edit_lead_in_out, SIGNAL(pressed()),SLOT(rotate_lead_in_out()));
-    QObject::connect(ui->toolButton_generate_contours, SIGNAL(pressed()),SLOT(generate_contours()));
+    QObject::connect(ui->toolButton_process, SIGNAL(pressed()),SLOT(process()));
 }
 
 MainWindow::~MainWindow()
@@ -314,7 +314,7 @@ void MainWindow::load_opencascade_primitives(){
         std::string layer=dxfvec.at(i).acad_layer;
         // No duplicates
         if(std::find(layervec.begin(), layervec.end(),layer)!=layervec.end()){
-            //do nothing
+            // Do nothing
         } else {
             layervec.push_back(layer);
         }
@@ -324,9 +324,90 @@ void MainWindow::load_opencascade_primitives(){
     for(unsigned int i=0; i<layervec.size(); i++){
         ui->comboBox_layer->addItem(QString::fromStdString(layervec.at(i)));
     }
+}
 
-    // When dxf is loaded, calculate contours.
-    // generate_contours();
+//! This function is a buttonpress slot.
+void MainWindow::process(){
+
+    // Remove all previous offsets.
+    OpencascadeWidget->erase_all();
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        contourvec.at(i).offset_sequence.clear();
+        contourvec.at(i).lead_base.points.clear();
+        contourvec.at(i).lead_in.points.clear();
+        contourvec.at(i).lead_out.points.clear();
+    }
+
+    gcode_get_user_settings();
+
+    // Check what user has selected. Did he select the combobox [offset] or [pocket] item?
+    if(gc.operation_type=="contour"){
+        generate_contours();
+    }
+    if(gc.operation_type=="pocket"){
+        generate_pockets();
+    }
+    if(gc.operation_type=="drill"){ // Todo function.
+
+    }
+}
+
+//! Class to perform pockets. With or without islands.
+void MainWindow::generate_pockets(){
+    // Finding contourpoints hit tollerance in mm.
+    // The function also calculates the "depth sequence" and the "keep parts together" algoritme.
+    contours().main(0.1, gc.layer);
+    // Stay with cw contours. We need cw contour for islands.
+    offsets().do_pocket();
+
+    for(unsigned int i=0; i<dxfvec.size(); i++){
+        OpencascadeWidget->show_shape(dxfvec.at(i).ashape);                                     // Dxf drawing preview.
+    }
+
+    for(unsigned int i=0; i<pocketvec.size(); i++){
+        for(unsigned int j=0; j<pocketvec.at(i).offset_sequence.size(); j++){                  // Offset contour data.
+            OpencascadeWidget->show_shape(pocketvec.at(i).offset_sequence.at(j).ashape);
+        }
+    }
+
+    OpencascadeWidget->show_3d_interactive_box();
+
+    gcode().generate();
+    gcode_preview();    // Update the mainwindow gcode preview:
+}
+
+//! Class to perform offsets.
+void MainWindow::generate_contours(){
+
+    // Finding contourpoints hit tollerance in mm.
+    contours().main(0.1, gc.layer);
+    // Morph cw into ccw contours for the odd depth's.
+    contours().add_contour_ccw();
+
+    // Generate offsets.
+    offsets().do_offset(gc.offset,offset_action::offset_contour,gc.lead_in,gc.lead_out);
+    offsets().do_offset(gc.offset,offset_action::lead_base_contour,gc.lead_in,gc.lead_out);
+    offsets().do_offset(gc.offset,offset_action::lead_in_contour,gc.lead_in,gc.lead_out);
+    offsets().do_offset(gc.offset,offset_action::lead_out_contour,gc.lead_in,gc.lead_out);
+
+    for(unsigned int i=0; i<dxfvec.size(); i++){
+        OpencascadeWidget->show_shape(dxfvec.at(i).ashape);                                     // Dxf drawing preview.
+    }
+
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        for(unsigned int j=0; j<contourvec.at(i).offset_sequence.size(); j++){                  // Offset contour data.
+            OpencascadeWidget->show_shape(contourvec.at(i).offset_sequence.at(j).ashape);
+        }
+    }
+
+    for(unsigned int i=0; i<contourvec.size(); i++){
+        OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);                         // Show lead-in, lead-out shapes.
+        OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);
+    }
+    OpencascadeWidget->show_3d_interactive_box();
+
+    gcode().generate();
+    gcode_preview();    // Update the mainwindow gcode preview:
 }
 
 //! Move the lead_in-out to next position of the contourvec.at[i]. We simply rotote the primitive sequence vector +1.
@@ -375,55 +456,6 @@ void MainWindow::rotate_lead_in_out(){
     gcode_preview();
 }
 
-void MainWindow::generate_contours(){
-
-    OpencascadeWidget->erase_all();
-    for(unsigned int i=0; i<contourvec.size(); i++){                                            // Remove all previous offsets.
-        contourvec.at(i).offset_sequence.clear();
-        contourvec.at(i).lead_base.points.clear();
-        contourvec.at(i).lead_in.points.clear();
-        contourvec.at(i).lead_out.points.clear();
-    }
-
-    // At this stage we can create contours from the individual primitives.
-    // We do this in the contours class.
-    gcode_get_user_settings();
-
-    // Finding contourpoints hit tollerance in mm.
-
-    contours().main(0.1, gc.layer);
-
-    // First parameter offset, + or -. Second parameter lead-in, lead-out distance, keep value positive.
-    // Gc is gcode setup.
-    double offset=gc.offset;
-    double lead_in=gc.lead_in;
-    double lead_out=gc.lead_out;
-
-    offsets().do_offset(offset,offset_action::offset_contour,lead_in,lead_out);
-    offsets().do_offset(offset,offset_action::lead_base_contour,lead_in,lead_out);
-    offsets().do_offset(offset,offset_action::lead_in_contour,lead_in,lead_out);
-    offsets().do_offset(offset,offset_action::lead_out_contour,lead_in,lead_out);
-
-    for(unsigned int i=0; i<dxfvec.size(); i++){
-        OpencascadeWidget->show_shape(dxfvec.at(i).ashape);                                     // Dxf drawing preview.
-    }
-
-    for(unsigned int i=0; i<contourvec.size(); i++){
-        for(unsigned int j=0; j<contourvec.at(i).offset_sequence.size(); j++){                  // Offset contour data.
-            OpencascadeWidget->show_shape(contourvec.at(i).offset_sequence.at(j).ashape);
-        }
-    }
-
-    for(unsigned int i=0; i<contourvec.size(); i++){
-        OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);                         // Show lead-in, lead-out shapes.
-        OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);
-    }
-    OpencascadeWidget->show_3d_interactive_box();
-
-    gcode().generate();
-    gcode_preview();    // Update the mainwindow gcode preview:
-}
-
 void MainWindow::gcode_get_user_settings(){
 
     gc.linenumber_format=ui->lineEdit_gcode_linenumber_format->text().toStdString();
@@ -435,8 +467,10 @@ void MainWindow::gcode_get_user_settings(){
     gc.travelheight=ui->lineEdit_travel_height->text().toDouble();
     gc.pierceheight=ui->lineEdit_plunge_height->text().toDouble();
     gc.piercespeed=ui->lineEdit_plunge_speed->text().toDouble();
+    gc.piercedelay=ui->lineEdit_plunge_delay->text().toDouble();
     gc.offset=ui->lineEdit_offset->text().toDouble();
     gc.layer=ui->comboBox_layer->currentText().toStdString();
+    gc.internal_pocket_offset=ui->lineEdit_pocket_internal_offset->text().toDouble();
 
     // Intro
     QString plainTextEditContents = ui->plainTextEdit_intro->toPlainText();
@@ -456,6 +490,9 @@ void MainWindow::gcode_get_user_settings(){
         str+="\n";
         gc.outtro.push_back(str);
     }
+
+    // Operation type, contour, pocket, drill.
+    gc.operation_type=ui->comboBox_operation_type->currentText().toStdString();
 }
 
 void MainWindow::gcode_preview()
