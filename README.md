@@ -39,6 +39,7 @@ Currently implemented:
 - Can add line-numbers to the gcode.ngc file.
 - Supports pockets with or without islands. Base offset + Internal pocket offset.
 - Supports multiple operation output.
+- Supports second head + xyz tool offsets.
 
 Todo:
 
