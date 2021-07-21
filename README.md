@@ -13,9 +13,8 @@ Black listed companies:
 2. Youtube
 3. Twitter
 
-![joco-power](https://user-images.githubusercontent.com/44880102/126195312-21ad8ad2-9934-4f9a-8ca5-feb9db597b5f.jpg)
-![joco-power1](https://user-images.githubusercontent.com/44880102/126195320-89a89308-8b0b-46ca-905c-5ea7eb64b7d5.jpg)
-![joco-power](https://user-images.githubusercontent.com/44880102/126424607-9ac7d72e-8f70-4704-9522-bae9012943e3.jpg)
+![joco-power](https://user-images.githubusercontent.com/44880102/126502575-c422e54a-4c5a-4bbd-ae8f-2bd8f725128f.jpg)
+
 
 
 # QT_dxfrw
@@ -39,12 +38,12 @@ Currently implemented:
 - Generates a gcode.ngc output file located in build directory.
 - Can add line-numbers to the gcode.ngc file.
 - Supports pockets with or without islands. Base offset + Internal pocket offset.
+- Supports multiple operation output.
 
 Todo:
 
 - Show rapids.
 - Create a .deb installer script for this app.
 
-Gcode output tested:
-![gcode](https://user-images.githubusercontent.com/44880102/125856968-7a27359c-bccd-45f4-8186-6dae3863da6f.jpg)
+
 
