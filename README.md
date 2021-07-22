@@ -1,21 +1,4 @@
-The Licence includes : This source code or any of it's contents is prohibited to be used in the following "black listed" countries, that violates human rights.
-
-Black listed countries:
-1. France
-2. Greece
-3. United Kingdom
-4. __
-
-The Licence includes : This source code or any of it's contents is prohibited to be used by the following "black listed companies that violates human rights.
-
-Black listed companies:
-1. Google
-2. Youtube
-3. Twitter
-
-![joco-power](https://user-images.githubusercontent.com/44880102/126502575-c422e54a-4c5a-4bbd-ae8f-2bd8f725128f.jpg)
-
-
+![joco-power](https://user-images.githubusercontent.com/44880102/126598963-eb5e78d0-e62d-4cf1-8585-2610579a28bb.jpg)
 
 # QT_dxfrw
 Qt project example of the dxfrw c++ library
@@ -40,11 +23,24 @@ Currently implemented:
 - Supports pockets with or without islands. Base offset + Internal pocket offset.
 - Supports multiple operation output.
 - Supports second head + xyz tool offsets.
+- Shows rapids.
 
 Todo:
-
-- Show rapids.
 - Create a .deb installer script for this app.
 
+The Licence includes : This source code or any of it's contents is prohibited to be used in the following "black listed" countries, that violates human rights.
+
+Black listed countries:
+1. France
+2. Greece
+3. United Kingdom
+4. __
+
+The Licence includes : This source code or any of it's contents is prohibited to be used by the following "black listed companies that violates human rights.
+
+Black listed companies:
+1. Google
+2. Youtube
+3. Twitter
 
 
