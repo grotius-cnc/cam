@@ -31,7 +31,6 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::add_operation(){
-
     gcode_get_user_settings(); // Update gc.
     gcvec.push_back(gc);
     ui->listWidget->addItem(QString::fromStdString(gc.layer));
@@ -58,6 +57,10 @@ void MainWindow::process_operations(){
     gcode().generate();
 
     gcode_preview();    // Update the mainwindow gcode preview:
+
+    for(unsigned int i=0; i<rapidvec.size(); i++){
+        OpencascadeWidget->show_shape(rapidvec.at(i).ashape); // Show gcode rapids.
+    }
 }
 
 void MainWindow::clear_operations(){
@@ -65,6 +68,7 @@ void MainWindow::clear_operations(){
     contourvec.clear();
     pocketvec.clear();
     datavec.clear();
+    rapidvec.clear();
 
     // Draw only the dxf data back on the screen:
     for(unsigned int i=0; i<dxfvec.size(); i++){
@@ -90,6 +94,7 @@ bool MainWindow::open_dxf_file(std::string filename){
     pocketvec.clear();
     datavec.clear();
     dxfvec.clear();
+    rapidvec.clear();
     ui->comboBox_layer->clear();
     dx_iface().clear(&fData);           // Clear previous loaded dxf data.
 
@@ -139,7 +144,7 @@ void MainWindow::load_opencascade_primitives(){
 
             DRW_Point *point = dynamic_cast<DRW_Point*>(*iter);
             Handle(AIS_Shape) ashape=draw_primitives().draw_3d_point({point->basePoint.x,point->basePoint.y,point->basePoint.z});
-            ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(point->color),1);
+            ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLACK,1);
 
             datas d;
             d.ashape=ashape;
@@ -154,7 +159,7 @@ void MainWindow::load_opencascade_primitives(){
 
             DRW_Line *line = dynamic_cast<DRW_Line*>(*iter);
             Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({line->basePoint.x, line->basePoint.y, line->basePoint.z},{line->secPoint.x, line->secPoint.y, line->secPoint.z});
-            ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(line->color),1);
+            ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLACK,1);
 
             datas d;
             d.ashape=ashape;
@@ -179,7 +184,7 @@ void MainWindow::load_opencascade_primitives(){
             pntvec.push_back({lwpolyline->vertlist.front()->x,lwpolyline->vertlist.front()->y,0});
 
             Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line_wire(pntvec);
-            ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(lwpolyline->color),1);
+            ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLACK,1);
 
             // Calculate if lwpolyline (wire) is cw or ccw. If area<0 => ccw. If area>0 => cw.
             double area=0;
@@ -228,7 +233,7 @@ void MainWindow::load_opencascade_primitives(){
                 pntvec.push_back({spline->controllist.at(i)->x,spline->controllist.at(i)->y,spline->controllist.at(i)->z});
             }
             Handle(AIS_Shape) ashape=draw_primitives().draw_3d_spline(pntvec,5);
-            ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(spline->color),1);
+            ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLACK,1);
             OpencascadeWidget->show_shape(ashape);
             //std::cout<<"spline fitlist.size:"<<spline->fitlist.size()<<std::endl;
             //std::cout<<"spline controllist.size:"<<spline->controllist.size()<<std::endl;
@@ -251,7 +256,7 @@ void MainWindow::load_opencascade_primitives(){
             DRW_Arc *arc = dynamic_cast<DRW_Arc*>(*iter);
             Handle(AIS_Shape) ashape=draw_primitives().draw_2d_acad_arc({arc->center().x,arc->center().y,arc->center().z}, arc->radius(),
                                                                         arc->startAngle(),arc->endAngle());
-            ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(arc->color),1);
+            ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLACK,1);
 
             datas d;
             d.ashape=ashape;
@@ -291,7 +296,7 @@ void MainWindow::load_opencascade_primitives(){
 
             DRW_Circle *circle = dynamic_cast<DRW_Circle*>(*iter);
             Handle(AIS_Shape) ashape=draw_primitives().draw_2d_circle({circle->basePoint.x,circle->basePoint.y,circle->basePoint.z},circle->radious);
-            ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(circle->color),1);
+            ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLACK,1);
 
             datas d;
             d.ashape=ashape;
@@ -324,7 +329,7 @@ void MainWindow::load_opencascade_primitives(){
                                                                        ellipse->staparam,
                                                                        ellipse->endparam,
                                                                        ellipse->ratio);
-            ashape=draw_primitives().colorize(ashape,draw_primitives().autocad_color(ellipse->color),1);
+            ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLACK,1);
 
             // std::cout<<"ellipse secpoint x:"<<ellipse->secPoint.x<<" y:"<<ellipse->secPoint.y<<" z:"<<ellipse->secPoint.z<<std::endl;
             // std::cout<<"ellipse extpoint x:"<<ellipse->extPoint.x<<" y:"<<ellipse->extPoint.y<<" z:"<<ellipse->extPoint.z<<std::endl;
@@ -382,24 +387,9 @@ void MainWindow::load_opencascade_primitives(){
 //! This function is a buttonpress slot.
 void MainWindow::process(){
 
-    // Remove all previous offsets.
-    // OpencascadeWidget->erase_all();
-//    for(unsigned int i=0; i<contourvec.size(); i++){
-//        contourvec.at(i).offset_sequence.clear();
-//        contourvec.at(i).lead_base.points.clear();
-//        contourvec.at(i).lead_in.points.clear();
-//        contourvec.at(i).lead_out.points.clear();
-//    }
-//    for(unsigned int i=0; i<pocketvec.size(); i++){
-//        pocketvec.at(i).offset_sequence.clear();
-//    }
-
     contourvec.clear();
     pocketvec.clear();
     datavec.clear();
-
-
-    // gcode_get_user_settings();
 
     // Check what user has selected. Did he select the combobox [offset] or [pocket] item?
     if(gc.operation_type=="contour"){
@@ -407,9 +397,6 @@ void MainWindow::process(){
     }
     if(gc.operation_type=="pocket"){
         generate_pockets();
-    }
-    if(gc.operation_type=="drill"){ // Todo function.
-
     }
 }
 
@@ -432,9 +419,6 @@ void MainWindow::generate_pockets(){
     }
 
     OpencascadeWidget->show_3d_interactive_box();
-
-    // gcode().generate();
-    // gcode_preview();    // Update the mainwindow gcode preview:
 }
 
 //! Class to perform offsets.
@@ -465,15 +449,15 @@ void MainWindow::generate_contours(){
         OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);                         // Show lead-in, lead-out shapes.
         OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);
     }
-    OpencascadeWidget->show_3d_interactive_box();
 
-    // gcode().generate();
-    // gcode_preview();    // Update the mainwindow gcode preview:
+    OpencascadeWidget->show_3d_interactive_box();
 }
 
 //! Move the lead_in-out to next position of the contourvec.at[i]. We simply rotote the primitive sequence vector +1.
 //! Then we perform a new contour offset and reload the opencascade view. The gcode output .ngc file is updated.
 void MainWindow::rotate_lead_in_out(){
+
+    rapidvec.clear();
 
     OpencascadeWidget->erase_all();
     unsigned int i=OpencascadeWidget->selected_contour;
@@ -496,6 +480,24 @@ void MainWindow::rotate_lead_in_out(){
     offsets().do_offset(offset,offset_action::lead_in_contour,lead_in,lead_out);
     offsets().do_offset(offset,offset_action::lead_out_contour,lead_in,lead_out);
 
+    linenumber=0; // Reset gcode linenumber.
+    gcode().clear();
+
+    gc.operation_type="intro";
+    gcode().generate();
+
+    gc.operation_type="pocket";
+    gcode().generate();
+
+    gc.operation_type="contour";
+    gcode().generate();                                                                         // Generate gcode.
+
+    gc.operation_type="outtro";
+    gcode().generate();  // Generate gcode.
+
+    // Update the mainwindow gcode preview:
+    gcode_preview();
+
     for(unsigned int i=0; i<dxfvec.size(); i++){
         OpencascadeWidget->show_shape(dxfvec.at(i).ashape);                                     // Dxf drawing preview.
     }
@@ -510,12 +512,18 @@ void MainWindow::rotate_lead_in_out(){
         OpencascadeWidget->show_shape(contourvec.at(i).lead_in.ashape);                         // Show lead-in, lead-out shapes.
         OpencascadeWidget->show_shape(contourvec.at(i).lead_out.ashape);
     }
-    OpencascadeWidget->show_3d_interactive_box();
 
-    linenumber=0; // Reset gcode linenumber.
-    gcode().generate();                                                                         // Generate gcode.
-    // Update the mainwindow gcode preview:
-    gcode_preview();
+    for(unsigned int i=0; i<pocketvec.size(); i++){
+        for(unsigned int j=0; j<pocketvec.at(i).offset_sequence.size(); j++){                  // Offset contour data.
+            OpencascadeWidget->show_shape(pocketvec.at(i).offset_sequence.at(j).ashape);
+        }
+    }
+
+    for(unsigned int i=0; i<rapidvec.size(); i++){
+        OpencascadeWidget->show_shape(rapidvec.at(i).ashape);                                   // Show gcode rapids.
+    }
+
+    OpencascadeWidget->show_3d_interactive_box();
 }
 
 void MainWindow::gcode_get_user_settings(){
@@ -602,16 +610,16 @@ void MainWindow::on_toolButton_open_dxf_pressed(){
 //    write_entity();
 //}
 
-void MainWindow::on_toolButton_stacket_page_plus_pressed()
-{
-    if(ui->stackedWidget->currentIndex() != ui->stackedWidget->count()-1){
-        ui->stackedWidget->setCurrentIndex(ui->stackedWidget->currentIndex()+1);
-    } else {
+//void MainWindow::on_toolButton_stacket_page_plus_pressed()
+//{
+//    if(ui->stackedWidget->currentIndex() != ui->stackedWidget->count()-1){
+//        ui->stackedWidget->setCurrentIndex(ui->stackedWidget->currentIndex()+1);
+//    } else {
 
-        ui->stackedWidget->setCurrentIndex(0);
-    }
-    // std::cout<<"curindex:"<<ui->stackedWidget->currentIndex()<<std::endl;
-}
+//        ui->stackedWidget->setCurrentIndex(0);
+//    }
+//    // std::cout<<"curindex:"<<ui->stackedWidget->currentIndex()<<std::endl;
+//}
 
 
 

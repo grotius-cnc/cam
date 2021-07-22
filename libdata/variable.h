@@ -49,7 +49,7 @@ struct datas {
     bool select=0; // Helper for contour algoritme.
 };
 //! Datavec contains the filtered cad_layers to cut, dxfvec is the complete dxf data.
-extern std::vector<datas> datavec, dxfvec;
+extern std::vector<datas> datavec, dxfvec, rapidvec;
 
 struct lead_in_out {
     //! The lead-in, lead-out shape (line, arc, etc).
@@ -86,6 +86,7 @@ struct gcode_setup{
     bool print_linenumbers=true;
     double lead_in;
     double lead_out;
+    int lead_start_i;
     double offset;
     double travelheight;
     double pierceheight;
@@ -97,6 +98,7 @@ struct gcode_setup{
     double internal_pocket_offset;
     double tooloffset_x, tooloffset_y, tooloffset_z;
 
+
     std::string layer;
     std::vector<std::string> intro;
     std::vector<std::string> outtro;
@@ -105,6 +107,7 @@ struct gcode_setup{
 };
 extern gcode_setup gc;
 extern std::vector<gcode_setup> gcvec;
+extern double last_x,last_y,last_z; // Used for displaying rapids. Can be used for toolhomepos.
 
 extern int linenumber;
 

@@ -76,10 +76,6 @@ private slots:
 
     void on_toolButton_open_dxf_pressed();
 
-    void on_toolButton_stacket_page_plus_pressed();
-
-
-
 private:
     Ui::MainWindow *ui;
     

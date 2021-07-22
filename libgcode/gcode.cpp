@@ -19,6 +19,7 @@ void gcode::generate(){
 
     linenumber_format=gc.linenumber_format;
     bool pr=gc.print_linenumbers;
+    last_z=gc.travelheight+gc.tooloffset_z;
 
     std::string line_nr;
 
@@ -31,54 +32,105 @@ void gcode::generate(){
         for(unsigned int i=0; i<gc.intro.size(); i++){
             myfile<<new_line_nr(pr)<<gc.intro.at(i);
         }
+        last_x=0;
+        last_y=0;
     }
 
     if(gc.operation_type=="pocket"){
         for(unsigned int i=0; i<pocketvec.size(); i++){
             for(unsigned int j=0; j<pocketvec.at(i).offset_sequence.size(); j++){
                 if(j==0){
-                    myfile<<new_line_nr(pr)<<"G0 X"<<pocketvec.at(i).offset_sequence.front().start.X()+gc.tooloffset_x
-                         <<" Y"<<pocketvec.at(i).offset_sequence.front().start.Y()+gc.tooloffset_y
-                        <<" "<<gc.z_axis_format<<gc.travelheight+gc.tooloffset_z
-                       <<"\n";
+                    myfile<<new_line_nr(pr)<<"G0 X"<<pocketvec.at(i).offset_sequence.front().start.X()+gc.tooloffset_x<<
+                            " Y"<<pocketvec.at(i).offset_sequence.front().start.Y()+gc.tooloffset_y<<
+                            " "<<gc.z_axis_format<<gc.travelheight+gc.tooloffset_z<<"\n";
                     myfile<<new_line_nr(pr)<<"G0 "<<gc.z_axis_format<<gc.pierceheight+gc.tooloffset_z<<"\n";
                     myfile<<new_line_nr(pr)<<gc.tool_on_macro<<" S"<<gc.power<<"\n";
                     if(gc.piercedelay>0){
                         myfile<<new_line_nr(pr)<<"G4 P"<<gc.piercedelay<<"\n";
                     }
                     myfile<<new_line_nr(pr)<<"G1 "<<gc.z_axis_format<<gc.cutheight+gc.tooloffset_z<<" F"<<gc.piercespeed<<"\n";
+
+                    // At travelheight G0 to startpoint.
+                    datas d;
+                    Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({last_x,
+                                                                             last_y,
+                                                                             last_z},
+                                                                            {pocketvec.at(i).offset_sequence.front().start.X(),
+                                                                             pocketvec.at(i).offset_sequence.front().start.Y(),
+                                                                             gc.travelheight});
+                    if(last_x==0 && last_y==0){
+                        ashape=draw_primitives().colorize(ashape,Quantity_NOC_PURPLE,0);
+                    } else {
+                        ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLUE,0);
+                    }
+
+                    d.ashape=ashape;
+                    rapidvec.push_back(d);
+
+                    // To pierceheight.
+                    ashape=draw_primitives().draw_3d_line({pocketvec.at(i).offset_sequence.front().start.X(),
+                                                           pocketvec.at(i).offset_sequence.front().start.Y(),
+                                                           gc.travelheight},
+                                                          {pocketvec.at(i).offset_sequence.front().start.X(),
+                                                           pocketvec.at(i).offset_sequence.front().start.Y(),
+                                                           gc.pierceheight});
+                    ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLUE,0);
+                    d.ashape=ashape;
+                    rapidvec.push_back(d);
+
+                    // To cutheight.
+                    ashape=draw_primitives().draw_3d_line({pocketvec.at(i).offset_sequence.front().start.X(),
+                                                           pocketvec.at(i).offset_sequence.front().start.Y(),
+                                                           gc.pierceheight},
+                                                          {pocketvec.at(i).offset_sequence.front().start.X(),
+                                                           pocketvec.at(i).offset_sequence.front().start.Y(),
+                                                           gc.cutheight});
+                    ashape=draw_primitives().colorize(ashape,Quantity_NOC_RED,0);
+                    d.ashape=ashape;
+                    rapidvec.push_back(d);
                 }
+
                 // [G1]
                 if(pocketvec.at(i).offset_sequence.at(j).primitivetype==primitive_type::line){
-                    myfile<<new_line_nr(pr)<<"G1 X"<<pocketvec.at(i).offset_sequence.at(j).end.X()+gc.tooloffset_x
-                         <<" Y"<<pocketvec.at(i).offset_sequence.at(j).end.Y()+gc.tooloffset_y
-                        <<" "<<gc.z_axis_format<<pocketvec.at(i).offset_sequence.at(j).end.Z()+gc.tooloffset_z
-                       <<" F"<<gc.feedrate
-                      <<"\n";
+                    myfile<<new_line_nr(pr)<<"G1 X"<<pocketvec.at(i).offset_sequence.at(j).end.X()+gc.tooloffset_x<<
+                            " Y"<<pocketvec.at(i).offset_sequence.at(j).end.Y()+gc.tooloffset_y<<
+                            " "<<gc.z_axis_format<<gc.cutheight+gc.tooloffset_z<<" F"<<gc.feedrate<<"\n";
                 }
                 // [G2] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
                 if(pocketvec.at(i).offset_sequence.at(j).primitivetype==primitive_type::arc && pocketvec.at(i).offset_sequence.at(j).bulge<0){
-                    myfile<<new_line_nr(pr)<<"G2 X"<<pocketvec.at(i).offset_sequence.at(j).end.X()+gc.tooloffset_x
-                         <<" Y"<<pocketvec.at(i).offset_sequence.at(j).end.Y()+gc.tooloffset_y
-                        <<" "<<gc.z_axis_format<<pocketvec.at(i).offset_sequence.at(j).end.Z()+gc.tooloffset_z
-                       <<" I"<<(pocketvec.at(i).offset_sequence.at(j).center.X()+gc.tooloffset_x)-(pocketvec.at(i).offset_sequence.at(j).start.X()+gc.tooloffset_x)
-                      <<" J"<<(pocketvec.at(i).offset_sequence.at(j).center.Y()+gc.tooloffset_y)-(pocketvec.at(i).offset_sequence.at(j).start.Y()+gc.tooloffset_y)
-                     <<" F"<<gc.feedrate
-                    <<"\n";
+                    myfile<<new_line_nr(pr)<<"G2 X"<<pocketvec.at(i).offset_sequence.at(j).end.X()+gc.tooloffset_x<<
+                            " Y"<<pocketvec.at(i).offset_sequence.at(j).end.Y()+gc.tooloffset_y<<
+                            " "<<gc.z_axis_format<<gc.cutheight+gc.tooloffset_z
+                         <<" I"<<(pocketvec.at(i).offset_sequence.at(j).center.X()+gc.tooloffset_x)-(pocketvec.at(i).offset_sequence.at(j).start.X()+gc.tooloffset_x)
+                        <<" J"<<(pocketvec.at(i).offset_sequence.at(j).center.Y()+gc.tooloffset_y)-(pocketvec.at(i).offset_sequence.at(j).start.Y()+gc.tooloffset_y)
+                       <<" F"<<gc.feedrate
+                      <<"\n";
                 }
                 // [G3] I=offset xcenter-xstart, J=offset ycenter-ystart, G2=clockwise (cw), G3=counterclockwise (ccw)
                 if(pocketvec.at(i).offset_sequence.at(j).primitivetype==primitive_type::arc && pocketvec.at(i).offset_sequence.at(j).bulge>0){
-                    myfile<<new_line_nr(pr)<<"G3 X"<<pocketvec.at(i).offset_sequence.at(j).end.X()+gc.tooloffset_x
-                         <<" Y"<<pocketvec.at(i).offset_sequence.at(j).end.Y()+gc.tooloffset_y
-                        <<" "<<gc.z_axis_format<<pocketvec.at(i).offset_sequence.at(j).end.Z()+gc.tooloffset_z
-                       <<" I"<<(pocketvec.at(i).offset_sequence.at(j).center.X()+gc.tooloffset_x)-(pocketvec.at(i).offset_sequence.at(j).start.X()+gc.tooloffset_x)
-                      <<" J"<<(pocketvec.at(i).offset_sequence.at(j).center.Y()+gc.tooloffset_y)-(pocketvec.at(i).offset_sequence.at(j).start.Y()+gc.tooloffset_y)
-                     <<" F"<<gc.feedrate
-                    <<"\n";
+                    myfile<<new_line_nr(pr)<<"G3 X"<<pocketvec.at(i).offset_sequence.at(j).end.X()+gc.tooloffset_x<<
+                            " Y"<<pocketvec.at(i).offset_sequence.at(j).end.Y()+gc.tooloffset_y<<
+                            " "<<gc.z_axis_format<<gc.cutheight+gc.tooloffset_z
+                         <<" I"<<(pocketvec.at(i).offset_sequence.at(j).center.X()+gc.tooloffset_x)-(pocketvec.at(i).offset_sequence.at(j).start.X()+gc.tooloffset_x)
+                        <<" J"<<(pocketvec.at(i).offset_sequence.at(j).center.Y()+gc.tooloffset_y)-(pocketvec.at(i).offset_sequence.at(j).start.Y()+gc.tooloffset_y)
+                       <<" F"<<gc.feedrate
+                      <<"\n";
                 }
                 if(j==pocketvec.at(i).offset_sequence.size()-1){
                     myfile<<new_line_nr(pr)<<"M5"<<"\n";
                     myfile<<new_line_nr(pr)<<"G0 "<<gc.z_axis_format<<gc.travelheight+gc.tooloffset_z<<"\n";
+
+                    // From cutheight to travelheight.
+                    datas d;
+                    Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({pocketvec.at(i).offset_sequence.at(j).end.X(),pocketvec.at(i).offset_sequence.at(j).end.Y(),gc.cutheight+gc.tooloffset_z},
+                                                                            {pocketvec.at(i).offset_sequence.at(j).end.X(),pocketvec.at(i).offset_sequence.at(j).end.Y(),gc.travelheight});
+                    ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLUE,0);
+                    d.ashape=ashape;
+                    rapidvec.push_back(d);
+
+                    last_x=pocketvec.at(i).offset_sequence.at(j).end.X(); // Store points for next G0 rapid line.
+                    last_y=pocketvec.at(i).offset_sequence.at(j).end.Y();
+                    last_z=gc.travelheight;
                 }
             }
         }
@@ -102,6 +154,46 @@ void gcode::generate(){
                 }
                 myfile<<new_line_nr(pr)<<"G1 "<<gc.z_axis_format<<gc.cutheight+gc.tooloffset_z<<" F"<<gc.piercespeed<<"\n";
                 myfile<<new_line_nr(pr)<<"G1 X"<<pntvec.back().X()+gc.tooloffset_x<<" Y"<<pntvec.back().Y()+gc.tooloffset_y<<" F"<<gc.feedrate<<"\n";
+
+                // At travelheight G0 to startpoint.
+                datas d;
+                Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({last_x,
+                                                                         last_y,
+                                                                         last_z},
+                                                                        {pntvec.front().X(),
+                                                                         pntvec.front().Y(),
+                                                                         gc.travelheight});
+                if(last_x==0 && last_y==0){
+                    ashape=draw_primitives().colorize(ashape,Quantity_NOC_PURPLE,0);
+                } else {
+                    ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLUE,0);
+                }
+                d.ashape=ashape;
+                rapidvec.push_back(d);
+
+                // To pierceheight.
+                ashape=draw_primitives().draw_3d_line({pntvec.front().X(),
+                                                       pntvec.front().Y(),
+                                                       gc.travelheight},
+                                                      {pntvec.front().X(),
+                                                       pntvec.front().Y(),
+                                                       gc.pierceheight});
+                ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLUE,0);
+                d.ashape=ashape;
+                rapidvec.push_back(d);
+
+                // To cutheight.
+                ashape=draw_primitives().draw_3d_line({pntvec.front().X(),
+                                                       pntvec.front().Y(),
+                                                       gc.pierceheight},
+                                                      {pntvec.front().X(),
+                                                       pntvec.front().Y(),
+                                                       gc.cutheight});
+                ashape=draw_primitives().colorize(ashape,Quantity_NOC_RED,0);
+                d.ashape=ashape;
+                rapidvec.push_back(d);
+
+
             }
             // Contour lead-in. Only when contourtypes are open.
             if(contourvec.at(j).primitive_sequence.front().contourtype==contour_type::single_open || contourvec.at(j).primitive_sequence.front().contourtype==contour_type::multi_open){
@@ -109,6 +201,44 @@ void gcode::generate(){
                 myfile<<new_line_nr(pr)<<"G0 "<<gc.z_axis_format<<gc.pierceheight+gc.tooloffset_z<<"\n";
                 myfile<<new_line_nr(pr)<<gc.tool_on_macro<<" S"<<gc.power<<"\n";
                 myfile<<new_line_nr(pr)<<"G1 "<<gc.z_axis_format<<gc.cutheight+gc.tooloffset_z<<" F"<<gc.piercespeed<<"\n";
+
+                // At travelheight G0 to startpoint.
+                datas d;
+                Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({last_x,
+                                                                         last_y,
+                                                                         last_z},
+                                                                        {contourvec.at(j).primitive_sequence.front().start.X(),
+                                                                         contourvec.at(j).primitive_sequence.front().start.Y(),
+                                                                         gc.travelheight});
+                if(last_x==0 && last_y==0){
+                    ashape=draw_primitives().colorize(ashape,Quantity_NOC_PURPLE,0);
+                } else {
+                    ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLUE,0);
+                }
+                d.ashape=ashape;
+                rapidvec.push_back(d);
+
+                // To pierceheight.
+                ashape=draw_primitives().draw_3d_line({contourvec.at(j).primitive_sequence.front().start.X(),
+                                                       contourvec.at(j).primitive_sequence.front().start.Y(),
+                                                       gc.travelheight},
+                                                      {contourvec.at(j).primitive_sequence.front().start.X(),
+                                                       contourvec.at(j).primitive_sequence.front().start.Y(),
+                                                       gc.pierceheight});
+                ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLUE,0);
+                d.ashape=ashape;
+                rapidvec.push_back(d);
+
+                // To cutheight.
+                ashape=draw_primitives().draw_3d_line({contourvec.at(j).primitive_sequence.front().start.X(),
+                                                       contourvec.at(j).primitive_sequence.front().start.Y(),
+                                                       gc.pierceheight},
+                                                      {contourvec.at(j).primitive_sequence.front().start.X(),
+                                                       contourvec.at(j).primitive_sequence.front().start.Y(),
+                                                       gc.cutheight});
+                ashape=draw_primitives().colorize(ashape,Quantity_NOC_RED,0);
+                d.ashape=ashape;
+                rapidvec.push_back(d);
             }
 
             // Generate contour gcode for closed contours.
@@ -185,12 +315,44 @@ void gcode::generate(){
                 myfile<<new_line_nr(pr)<<"G1 X"<<pntvec.front().X()+gc.tooloffset_x<<" Y"<<pntvec.front().Y()+gc.tooloffset_y<<"\n";
                 myfile<<new_line_nr(pr)<<"M5"<<"\n";
                 myfile<<new_line_nr(pr)<<"G0 "<<gc.z_axis_format<<gc.travelheight+gc.tooloffset_z<<"\n";
+
+                // From cutheight to travelheight.
+                datas d;
+                Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({pntvec.front().X(),
+                                                                         pntvec.front().Y(),
+                                                                         gc.cutheight},
+                                                                        {pntvec.front().X(),
+                                                                         pntvec.front().Y(),
+                                                                         gc.travelheight});
+                ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLUE,0);
+                d.ashape=ashape;
+                rapidvec.push_back(d);
+
+                last_x=pntvec.front().X(); // Store points for next G0 rapid line.
+                last_y=pntvec.front().Y();
+                last_z=gc.travelheight;
             }
             // Contour lead-out. Only when contourtypes are open.
             if(contourvec.at(j).primitive_sequence.front().contourtype==contour_type::single_open || contourvec.at(j).primitive_sequence.front().contourtype==contour_type::multi_open){
                 myfile<<new_line_nr(pr)<<"G1 X"<<contourvec.at(j).primitive_sequence.back().end.X()+gc.tooloffset_x<<" Y"<<contourvec.at(j).primitive_sequence.back().end.Y()+gc.tooloffset_y<<"\n";
                 myfile<<new_line_nr(pr)<<"M5"<<"\n";
                 myfile<<new_line_nr(pr)<<"G0 "<<gc.z_axis_format<<gc.travelheight+gc.tooloffset_z<<"\n";
+
+                // From cutheight to travelheight.
+                datas d;
+                Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({contourvec.at(j).primitive_sequence.back().end.X(),
+                                                                         contourvec.at(j).primitive_sequence.back().end.Y(),
+                                                                         gc.cutheight},
+                                                                        {contourvec.at(j).primitive_sequence.back().end.X(),
+                                                                         contourvec.at(j).primitive_sequence.back().end.Y(),
+                                                                         gc.travelheight});
+                ashape=draw_primitives().colorize(ashape,Quantity_NOC_BLUE,0);
+                d.ashape=ashape;
+                rapidvec.push_back(d);
+
+                last_x=contourvec.at(j).primitive_sequence.back().end.X(); // Store points for next G0 rapid line.
+                last_y=contourvec.at(j).primitive_sequence.back().end.Y();
+                last_z=gc.travelheight;
             }
         }
     }
@@ -199,6 +361,18 @@ void gcode::generate(){
         for(unsigned int i=0; i<gc.outtro.size(); i++){
             myfile<<new_line_nr(pr)<<line_nr<<gc.outtro.at(i);
         }
+
+        // From travelheight up.
+        datas d;
+        Handle(AIS_Shape) ashape=draw_primitives().draw_3d_line({last_x,
+                                                                 last_y,
+                                                                 gc.travelheight},
+                                                                {0,
+                                                                 0,
+                                                                 gc.travelheight});
+        ashape=draw_primitives().colorize(ashape,Quantity_NOC_PURPLE,0);
+        d.ashape=ashape;
+        rapidvec.push_back(d);
     }
     myfile.close();
 }
