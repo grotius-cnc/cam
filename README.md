@@ -1,5 +1,8 @@
 ![joco-power](https://user-images.githubusercontent.com/44880102/126598963-eb5e78d0-e62d-4cf1-8585-2610579a28bb.jpg)
 
+Now available as .deb package for linux, including desktop launcher.
+https://github.com/grotius-cnc/simple_cam/releases/tag/1.0.0
+
 # QT_dxfrw
 Qt project example of the dxfrw c++ library
 
