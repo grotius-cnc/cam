@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Cam
+Exec=./cam
+Type=Application
+Categories=Development;
+Comment="You can clean up hal with : Halrun -U"
+Icon=/opt/cam/cam-icon.png
+Path=/opt/cam/build-qt-dxf-Desktop-Debug
