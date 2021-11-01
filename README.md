@@ -3,15 +3,6 @@
 Now available as .deb package for linux, including desktop launcher.
 https://github.com/grotius-cnc/simple_cam/releases/tag/1.0.0
 
-# QT_dxfrw
-Qt project example of the dxfrw c++ library
-
-This is the same dxfrw lib used in librecad, freecad etc.
-
-This example show's how to use the dxfrw library and display the dxf content with the opencascade widget.
-
-Depends : Qt + opencascade library
-
 Currently implemented:
 
 - Dxf read, write and save example.
@@ -27,23 +18,5 @@ Currently implemented:
 - Supports multiple operation output.
 - Supports second head + xyz tool offsets.
 - Shows rapids.
-
-Todo:
-- Create a .deb installer script for this app.
-
-The Licence includes : This source code or any of it's contents is prohibited to be used in the following "black listed" countries, that violates human rights.
-
-Black listed countries:
-1. France
-2. Greece
-3. United Kingdom
-4. __
-
-The Licence includes : This source code or any of it's contents is prohibited to be used by the following "black listed companies that violates human rights.
-
-Black listed companies:
-1. Google
-2. Youtube
-3. Twitter
 
 
