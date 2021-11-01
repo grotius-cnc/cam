@@ -108,11 +108,11 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
 
 # this copies the configuration files etc to the build direcory. So user has only to edit the source directory.
-copydata.commands = $(COPY_DIR) $$PWD/* $$OUT_PWD
-first.depends = $(first) copydata
-export(first.depends)
-export(copydata.commands)
-QMAKE_EXTRA_TARGETS += first copydata
+# copydata.commands = $(COPY_DIR) $$PWD/* $$OUT_PWD
+# first.depends = $(first) copydata
+# export(first.depends)
+# export(copydata.commands)
+# QMAKE_EXTRA_TARGETS += first copydata
 
 # Opencascade
 LIBS+= -L/usr/local/lib/ \
