@@ -1,3 +1,5 @@
+[![Github All Releases](https://img.shields.io/github/downloads/grotius-cnc/cam/total.svg)]()
+
 ![joco-power](https://user-images.githubusercontent.com/44880102/126598963-eb5e78d0-e62d-4cf1-8585-2610579a28bb.jpg)
 
 Now available as .deb package for linux, including desktop launcher.
